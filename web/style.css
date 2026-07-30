@@ -123,31 +123,23 @@ body {
 .dhead #dword { font-size: 18px; font-weight: 800; }
 .dhead .dpts { font-size: 22px; font-weight: 900; color: var(--push);
   font-variant-numeric: tabular-nums; }
-.dbars { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 20px; }
-.dbar { display: flex; align-items: center; gap: 8px; font-size: 11px;
-  color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
-.dbar > span { width: 84px; flex: none; }
-.dbar > i { flex: 1; height: 7px; background: var(--line); border-radius: 4px;
-  overflow: hidden; }
-.dbar > i > b { display: block; height: 100%; width: 0;
-  background: linear-gradient(90deg, var(--cool), var(--hot));
-  transition: width .25s; }
-.dbar > u { width: 38px; flex: none; text-align: right; font-style: normal;
-  font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 700;
-  font-size: 12px; }
-.dnote { margin-top: 10px; font-size: 11px; color: var(--muted);
-  letter-spacing: .02em; text-align: center; opacity: .85; }
+/* --- LE SCORE : deux jauges bien en évidence (rareté, vitesse) ------------ */
+.scoregauges { display: flex; flex-direction: column; gap: 14px; }
+.sg .sglabel { display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 13px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ink); margin-bottom: 7px; }
+.sg .sglabel b { font-size: 18px; font-weight: 900; color: var(--cool);
+  font-variant-numeric: tabular-nums; letter-spacing: 0; }
+.sgtrack { height: 16px; background: var(--line); border-radius: 8px; overflow: hidden; }
+.sgtrack > i { display: block; height: 100%; width: 0; border-radius: 8px;
+  background: linear-gradient(90deg, var(--cool), var(--warm), var(--hot));
+  transition: width .3s ease-out; }
 
-/* étiquette de zone ("le lien" / "le score") — lisibilité arcade */
-.zlbl { font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
-  color: var(--muted); font-weight: 800; margin-bottom: 8px; }
-.zlbl span { opacity: .55; font-weight: 600; letter-spacing: .06em; }
-
-/* --- LE LIEN : portail (proximité) + ressemblance (malus) ----------------- */
-.gates { background: var(--bg2); border: 1px solid var(--line); border-radius: 12px;
-  padding: 12px 16px; margin-bottom: 14px; }
-.portal { margin-bottom: 0; }
-.portal + .portal { margin-top: 12px; }
+/* --- LE PORTAIL : proximité (ressemblance fusionnée dedans) --------------- */
+.portal { margin-bottom: 16px; }
+.plbl { display: flex; justify-content: space-between; margin-top: 5px;
+  font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+  opacity: .7; }
 .phead { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px;
   font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 .phead b { color: var(--ink); font-weight: 800; font-variant-numeric: tabular-nums;
@@ -163,15 +155,8 @@ body {
 .pmark { position: absolute; top: -3px; left: 0; width: 3px; height: 18px;
   background: #fff; border-radius: 2px; box-shadow: 0 0 7px rgba(255, 255, 255, .85);
   transition: left .2s ease-out; }
-
-/* ressemblance = MALUS : jauge rouge + badge "écho" quand elle pénalise */
-.portal.malus .phead #mflag { margin-left: auto; font-weight: 900; letter-spacing: .04em;
-  color: var(--bail); }
-.mtrack { height: 8px; border-radius: 5px; overflow: hidden; background: var(--line); }
-.mtrack > i { display: block; height: 100%; width: 0;
-  background: linear-gradient(90deg, #6a5030, var(--bail)); transition: width .25s; }
-.portal.malus.hot .mtrack > i { box-shadow: 0 0 10px var(--bail); }
-.portal.malus.hot .phead b { color: var(--bail); }
+/* curseur poussé dans "trop proche" = écho (synonyme/dérivation) */
+.portal.echo .pmark { background: var(--bail); box-shadow: 0 0 9px var(--bail); }
 
 /* --- Input ---------------------------------------------------------------- */
 .inrow { display: flex; gap: 10px; }

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Vocabulium</title>
-  <link rel="stylesheet" href="/style.css?v=12">
+  <link rel="stylesheet" href="/style.css?v=13">
 </head>
 <body>
   <div id="app">
@@ -21,31 +21,25 @@
       <div class="word" id="current">…</div>
     </div>
 
-    <!-- LE LIEN : les deux garde-fous (jugent le pont, ne donnent pas de points) -->
-    <div class="gates">
-      <div class="zlbl">le lien — <span>ouvre ou ferme la porte</span></div>
-      <div class="portal" id="portal">
-        <div class="phead">proximité <b id="pprox">—</b><span id="pverdict"></span></div>
-        <div class="ptrack" id="ptrack">
-          <span class="pz rej" id="pz-rej"></span><span class="pz far" id="pz-far"></span><span class="pz sweet" id="pz-sweet"></span><span class="pz syno" id="pz-syno"></span>
-          <i class="pmark" id="pmark"></i>
-        </div>
+    <!-- LE PORTAIL : proximité (la ressemblance y est fusionnée : trop proche = écho) -->
+    <div class="portal" id="portal">
+      <div class="phead">proximité <b id="pprox">—</b><span id="pverdict"></span></div>
+      <div class="ptrack" id="ptrack">
+        <span class="pz rej" id="pz-rej"></span><span class="pz far" id="pz-far"></span><span class="pz sweet" id="pz-sweet"></span><span class="pz syno" id="pz-syno"></span>
+        <i class="pmark" id="pmark"></i>
       </div>
-      <div class="portal malus" id="malusrow">
-        <div class="phead">ressemblance <b id="v-res">—</b><span id="mflag"></span></div>
-        <div class="mtrack"><i id="b-res"></i></div>
-      </div>
+      <div class="plbl"><span>trop loin</span><span>sweet spot</span><span>trop proche / écho</span></div>
     </div>
 
-    <!-- LE SCORE : ce que le mot rapporte -->
+    <!-- LE SCORE : les deux jauges qui rapportent -->
     <div class="detail" id="detail">
-      <div class="zlbl">le score — <span>ce que le mot rapporte</span></div>
       <div class="dhead"><span id="dword">—</span><span class="dpts" id="dpts"></span></div>
-      <div class="dbars">
-        <div class="dbar"><span>rareté</span><i><b id="b-rar"></b></i><u id="v-rar">—</u></div>
-        <div class="dbar"><span>vitesse</span><i><b id="b-speed"></b></i><u id="v-speed">—</u></div>
+      <div class="scoregauges">
+        <div class="sg"><div class="sglabel">Rareté <b id="v-rar">—</b></div>
+          <div class="sgtrack"><i id="b-rar"></i></div></div>
+        <div class="sg"><div class="sglabel">Vitesse <b id="v-speed">—</b></div>
+          <div class="sgtrack"><i id="b-speed"></i></div></div>
       </div>
-      <div class="dnote">points = <b>rareté × vitesse</b></div>
     </div>
 
     <div class="inrow">
@@ -78,6 +72,6 @@
     <button id="again">Rejouer</button>
   </div>
 
-  <script src="/app.js?v=12"></script>
+  <script src="/app.js?v=13"></script>
 </body>
 </html>

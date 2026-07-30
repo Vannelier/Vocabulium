@@ -17,7 +17,6 @@ const el = {
   dword: $("dword"), dpts: $("dpts"),
   bRar: $("b-rar"), bSpeed: $("b-speed"),
   vRar: $("v-rar"), vSpeed: $("v-speed"),
-  bRes: $("b-res"), vRes: $("v-res"), mflag: $("mflag"), malusrow: $("malusrow"),
   portal: $("portal"), pprox: $("pprox"), pverdict: $("pverdict"), pmark: $("pmark"),
   pzRej: $("pz-rej"), pzFar: $("pz-far"), pzSweet: $("pz-sweet"), pzSyno: $("pz-syno"),
   end: $("end"), final: $("final"), best: $("best"), recap: $("recap"),
@@ -66,7 +65,7 @@ async function prepareRun() {
   el.dword.textContent = "—"; el.dpts.textContent = "";
   setupGate();
   renderGate(null);
-  setBars(0, 0, true); renderMalus(0, false, true);
+  setBars(0, 0, true);
   renderHud();
   renderMult(null);
 }
@@ -139,21 +138,13 @@ function clearMisses() {
 
 let synoRes = 0.457;   // seuil de ressemblance = onset synonyme (recalé depuis cfg)
 
-// LE SCORE : rareté + vitesse (les deux bonus qui rapportent).
+// LE SCORE : les deux jauges (rareté, vitesse).
 function setBars(rar, speed, blank) {
   el.bRar.style.width = rar * 100 + "%";
   el.bSpeed.style.width = speed * 100 + "%";
   const f = (x) => blank ? "—" : x.toFixed(2);
   el.vRar.textContent = f(rar);
   el.vSpeed.textContent = f(speed);
-}
-
-// LE LIEN (malus) : la ressemblance. `penalized` = le hop est minoré (synonyme/dérivation).
-function renderMalus(resemble, penalized, blank) {
-  el.bRes.style.width = (resemble || 0) * 100 + "%";
-  el.vRes.textContent = blank ? "—" : resemble.toFixed(2);
-  el.malusrow.classList.toggle("hot", !!penalized);
-  el.mflag.textContent = penalized ? "⚠ écho ×0.35" : "";
 }
 
 // Le portail : où tombe la proximité (rejet / un peu loin / sweet spot / trop proche).
@@ -165,15 +156,22 @@ function setupGate() {
   synoRes = (cfg.syno - cfg.tau) / (1 - cfg.tau);
 }
 
-function renderGate(prox) {
+// Le portail = proximité AVEC la ressemblance fusionnée : une dérivation (racine
+// commune) a un cosinus moyen mais est un ÉCHO -> on pousse le curseur dans la
+// zone "trop proche". Le curseur montre donc la closeness EFFECTIVE.
+function renderGate(prox, zone, reason) {
   el.pprox.textContent = prox == null ? "—" : prox.toFixed(2);
-  el.pmark.style.left = Math.max(0, Math.min(100, (prox || 0) * 100)) + "%";
+  const echo = reason === "root";                        // écho malgré un cosinus moyen
+  const pos = echo ? Math.max(prox || 0, cfg.syno + (1 - cfg.syno) * 0.45) : (prox || 0);
+  el.pmark.style.left = Math.max(0, Math.min(100, pos * 100)) + "%";
+  el.portal.classList.toggle("echo", echo || (prox != null && prox >= cfg.syno));
   let txt = "", col = "";
   if (prox != null) {
-    if (prox < cfg.tau_grace)      { txt = "✗ trop loin";     col = "var(--bail)"; }
-    else if (prox < cfg.tau)       { txt = "⚠ un peu loin";   col = "var(--warm)"; }
-    else if (prox < cfg.syno)      { txt = "✓ pont valide";   col = "var(--bank)"; }
-    else                           { txt = "⚠ trop proche";   col = "var(--warm)"; }
+    if (zone === "reject")        { txt = "✗ trop loin";  col = "var(--bail)"; }
+    else if (reason === "root")   { txt = "⚠ écho (même racine)"; col = "var(--bail)"; }
+    else if (reason === "syno")   { txt = "⚠ trop proche"; col = "var(--bail)"; }
+    else if (reason === "far")    { txt = "⚠ un peu loin"; col = "var(--warm)"; }
+    else                          { txt = "✓ pont valide"; col = "var(--bank)"; }
   }
   el.pverdict.textContent = txt;
   el.pverdict.style.color = col;
@@ -181,28 +179,21 @@ function renderGate(prox) {
 
 function showDetail(res, gained, zone) {
   el.detail.className = "detail live" + (zone === "strong" ? "" : " " + zone);
-  renderGate(res.prox);
+  renderGate(res.prox, zone, res.reason);
   if (zone === "reject") {
     el.dword.innerHTML = `${res.input || res.word} <small>trop loin</small>`;
     el.dpts.textContent = "—";
-    setBars(0, 0); renderMalus(res.prox ? resembleFrom(res.prox) : 0, false, false);
+    setBars(0, 0);
     return;
   }
-  const penalized = zone === "weak" && (res.reason === "syno" || res.reason === "root");
   const weakTag = zone !== "weak" ? ""
-    : res.reason === "root" ? "même racine (dérivation)"
+    : res.reason === "root" ? "écho — même racine"
     : res.reason === "syno" ? "trop proche (synonyme)"
-    : "trop loin";
+    : "un peu loin";
   el.dword.innerHTML =
     `${res.word} <small style="color:var(--muted)">${weakTag || "pont valide"}</small>`;
   el.dpts.textContent = "+" + Math.round(gained);
   setBars(res.rarete, res.speed);
-  renderMalus(res.resemblance, penalized, false);
-}
-
-// ressemblance affichée même sur un rejet (montre à quel point c'était proche)
-function resembleFrom(prox) {
-  return Math.max(0, Math.min(1, (prox - cfg.tau) / (1 - cfg.tau)));
 }
 
 function pushTrail(word, hot, weak, gained) {
@@ -283,7 +274,7 @@ async function submitHop() {
   if (!res.valid) {                          // mot hors vocab (typo) / identique
     el.dword.innerHTML = `${res.input || raw} <small>mot inconnu</small>`;
     el.dpts.textContent = ""; el.detail.className = "detail live reject";
-    renderGate(null); setBars(0, 0, true); renderMalus(0, false, true); registerMiss(); shake();
+    renderGate(null); setBars(0, 0, true); registerMiss(); shake();
     el.guess.value = ""; return;
   }
   if (S.played.has(res.word)) {              // déjà joué : contrainte, pas une faute
