@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vocabulium</title>
+  <link rel="stylesheet" href="/style.css?v=12">
+</head>
+<body>
+  <div id="app">
+    <div class="hud">
+      <div class="stat" id="score"><div class="label">Score</div><div class="val">0</div></div>
+      <div class="stat" id="pending"><div class="label">Pending</div>
+        <div class="val"><span id="pnum">0</span> <span class="mult" id="mult">×1.00</span><span class="jeop" id="jeop"></span></div></div>
+    </div>
+    <div class="timer"><i id="timerbar"></i></div>
+
+    <div class="trail" id="trail"></div>
+    <div class="current">
+      <div class="from">tu enchaînes depuis</div>
+      <div class="word" id="current">…</div>
+    </div>
+
+    <!-- LE LIEN : les deux garde-fous (jugent le pont, ne donnent pas de points) -->
+    <div class="gates">
+      <div class="zlbl">le lien — <span>ouvre ou ferme la porte</span></div>
+      <div class="portal" id="portal">
+        <div class="phead">proximité <b id="pprox">—</b><span id="pverdict"></span></div>
+        <div class="ptrack" id="ptrack">
+          <span class="pz rej" id="pz-rej"></span><span class="pz far" id="pz-far"></span><span class="pz sweet" id="pz-sweet"></span><span class="pz syno" id="pz-syno"></span>
+          <i class="pmark" id="pmark"></i>
+        </div>
+      </div>
+      <div class="portal malus" id="malusrow">
+        <div class="phead">ressemblance <b id="v-res">—</b><span id="mflag"></span></div>
+        <div class="mtrack"><i id="b-res"></i></div>
+      </div>
+    </div>
+
+    <!-- LE SCORE : ce que le mot rapporte -->
+    <div class="detail" id="detail">
+      <div class="zlbl">le score — <span>ce que le mot rapporte</span></div>
+      <div class="dhead"><span id="dword">—</span><span class="dpts" id="dpts"></span></div>
+      <div class="dbars">
+        <div class="dbar"><span>rareté</span><i><b id="b-rar"></b></i><u id="v-rar">—</u></div>
+        <div class="dbar"><span>vitesse</span><i><b id="b-speed"></b></i><u id="v-speed">—</u></div>
+      </div>
+      <div class="dnote">points = <b>rareté × vitesse</b></div>
+    </div>
+
+    <div class="inrow">
+      <input id="guess" autocomplete="off" autocapitalize="off" spellcheck="false"
+             placeholder="un mot proche…" disabled>
+      <button id="bank" disabled>ENCAISSER</button>
+    </div>
+    <div class="hint">
+      <kbd>Entrée</kbd> pose le mot · <kbd>Entrée</kbd> à vide ou <kbd>Tab</kbd>
+      encaisse · un mot trop loin est refusé sans pénalité · la jauge se vide
+      vite et se recharge à chaque bon mot — à sec avec du pending non encaissé,
+      tu le <b>perds</b>.
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="end start" id="start">
+    <h1>Vocabulium</h1>
+    <div class="recap">enchaîne des mots proches, vite et malins · encaisse avant
+      que la jauge se vide<br><b>le chrono démarre dès que tu cliques</b></div>
+    <button id="play">Jouer</button>
+  </div>
+
+  <div class="end" id="end">
+    <h1>Run terminé</h1>
+    <div class="final" id="final">0</div>
+    <div class="best" id="best"></div>
+    <div class="recap" id="recap"></div>
+    <button id="again">Rejouer</button>
+  </div>
+
+  <script src="/app.js?v=12"></script>
+</body>
+</html>

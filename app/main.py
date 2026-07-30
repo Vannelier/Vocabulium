@@ -1,0 +1,92 @@
+"""Backend Vocabulium — FastAPI, stateless.
+
+Le serveur ne connaît pas le déroulé d'une partie : le combo, le pending, le
+timer et l'ensemble des mots déjà joués vivent côté client. /hop valide un seul
+saut P->G et renvoie sa décomposition de score ; le client applique le
+multiplicateur, encaisse, etc.
+"""
+from __future__ import annotations
+
+import datetime
+import sys
+from pathlib import Path
+
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import constants as C
+from app.db import Vocab
+from app.scoring import score_hop, same_root
+from app.seed import daily_seed, random_seed
+
+app = FastAPI(title="Vocabulium")
+db = Vocab()
+WEB_DIR = C.PROJECT_ROOT / "web"
+
+
+class HopRequest(BaseModel):
+    prev: str          # mot précédent (canonique, tel que renvoyé au tour d'avant)
+    next: str          # mot saisi par le joueur
+    t: float = 0.0     # secondes écoulées depuis le hop précédent
+
+
+@app.get("/api/seed")
+def get_seed(mode: str = "daily"):
+    """mode=daily : mot du jour déterministe (même pour tous, pour le leaderboard).
+    mode=random : mot aléatoire (variété entre deux parties du proto)."""
+    pool = db.seed_pool()
+    word = random_seed(pool) if mode == "random" else daily_seed(pool)
+    return {
+        "word": word,
+        "mode": mode,
+        "date": datetime.date.today().isoformat(),
+        "vocab_size": db.vocab_size,
+        "config": {
+            "tau": C.TAU, "tau_grace": C.TAU_GRACE, "syno": C.SYNO,
+            "combo_step": C.COMBO_STEP, "combo_floor": C.COMBO_FLOOR,
+            "mult_max": C.MULT_MAX,
+            "gauge_seconds": C.GAUGE_SECONDS, "weak_refill": C.WEAK_REFILL,
+            "keep_pending_on_timeout": C.KEEP_PENDING_ON_TIMEOUT,
+        },
+    }
+
+
+@app.post("/api/hop")
+def post_hop(req: HopRequest):
+    prev = db.canonical(req.prev)
+    if prev is None:
+        raise HTTPException(400, f"mot précédent inconnu: {req.prev}")
+
+    nxt = db.canonical(req.next)
+    if nxt is None:
+        # mot hors vocab : ni valide ni bail, on laisse rejouer
+        return {"valid": False, "reason": "unknown_word", "input": req.next}
+    if nxt == prev:
+        return {"valid": False, "reason": "same_word", "word": nxt}
+
+    prox = db.prox(prev, nxt)
+    result = score_hop(prox, db.zipf(nxt), req.t, root=same_root(prev, nxt))
+    out = result.to_dict()
+    out["word"] = nxt          # forme canonique (accents corrigés)
+    out["prev"] = prev
+    return out
+
+
+@app.get("/api/neighbors/{word}")
+def get_neighbors(word: str):
+    """Debug / révélation : meilleurs voisins d'un mot."""
+    canon = db.canonical(word)
+    if canon is None:
+        raise HTTPException(404, f"mot inconnu: {word}")
+    return {"word": canon, "neighbors": db.top_neighbors(canon)}
+
+
+@app.get("/")
+def index():
+    return FileResponse(WEB_DIR / "index.html")
+
+
+app.mount("/", StaticFiles(directory=WEB_DIR), name="web")

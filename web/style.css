@@ -1,0 +1,238 @@
+:root {
+  --bg: #0a0b10;
+  --bg2: #12141d;
+  --ink: #eef0f7;
+  --muted: #7c8296;
+  --line: #232637;
+  --hot: #ff5a3c;       /* incandescent : le pont malin */
+  --warm: #ffb03a;
+  --cool: #35d0ba;
+  --push: #ffd34e;      /* pending / risque */
+  --bank: #35d0ba;      /* encaissé / sûr */
+  --bail: #ff3b57;
+  --glow: 0 0 24px rgba(255, 90, 60, .55);
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: radial-gradient(1200px 700px at 50% -10%, #1a1d2b 0%, var(--bg) 60%);
+  color: var(--ink);
+  font-family: "Segoe UI", system-ui, sans-serif;
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+
+#app { width: min(720px, 94vw); padding: 20px; }
+
+/* --- HUD ------------------------------------------------------------------ */
+.hud { display: flex; justify-content: space-between; align-items: flex-end;
+  gap: 14px; margin-bottom: 14px; }
+.stat { flex: 1; }
+.stat .label { font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--muted); }
+.stat .val { font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums;
+  line-height: 1.1; }
+#score .val { color: var(--bank); }
+#pending .val { color: var(--push); }
+#pending.empty .val { color: var(--muted); }
+.mult { display: inline-block; font-size: 21px; font-weight: 900; margin-left: 8px;
+  color: var(--muted); transform: scale(var(--s, 1)); transform-origin: left center;
+  transition: color .15s; will-change: transform; }
+/* Montée : gros pop élastique, avec une inclinaison dont le SENS alterne (--tilt). */
+.mult.bump { animation: mbump .4s cubic-bezier(.28,1.5,.5,1); }
+@keyframes mbump {
+  0%   { transform: scale(calc(var(--s,1) * 1.85)) rotate(calc(var(--tilt,1) * 12deg)); }
+  50%  { transform: scale(calc(var(--s,1) * 0.86)) rotate(calc(var(--tilt,1) * -5deg)); }
+  100% { transform: scale(var(--s,1)) rotate(0deg); }
+}
+/* 1er raté : le mult tressaille en rouge sans casser (avertissement). */
+.mult.warn { animation: mwarn .5s ease-out; }
+@keyframes mwarn {
+  0%,100% { transform: scale(var(--s,1)) rotate(0); filter: none; }
+  18% { transform: scale(calc(var(--s,1)*1.22)) rotate(-9deg);
+        filter: drop-shadow(0 0 12px var(--bail)); color: var(--bail); }
+  46% { transform: scale(calc(var(--s,1)*1.08)) rotate(8deg);
+        filter: drop-shadow(0 0 8px var(--bail)); }
+  72% { transform: scale(var(--s,1)) rotate(-4deg); }
+}
+/* 2e raté : casse — flash blanc, s'effondre en rouge puis noir. */
+.mult.brk { animation: mbrk .62s ease-out; }
+@keyframes mbrk {
+  0%   { transform: scale(1.5); color: #fff; text-shadow: 0 0 22px #fff; }
+  16%  { transform: scale(.45) rotate(-14deg); color: var(--bail);
+         text-shadow: 0 0 26px var(--bail); }
+  42%  { transform: scale(1.12) rotate(8deg); color: #0a0a0a; text-shadow: none; }
+  70%  { transform: scale(.95) rotate(-3deg); }
+  100% { transform: scale(1); }
+}
+
+/* --- Timer ---------------------------------------------------------------- */
+.timer { height: 6px; background: var(--line); border-radius: 4px; overflow: hidden;
+  margin-bottom: 22px; }
+.timer > i { display: block; height: 100%; width: 100%;
+  background: linear-gradient(90deg, var(--cool), var(--warm), var(--hot));
+  transform-origin: left; transition: transform .2s linear; }
+
+/* --- Trail ---------------------------------------------------------------- */
+.trail { display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+  min-height: 30px; margin-bottom: 10px; opacity: .8; font-size: 14px; }
+.trail .w { color: var(--muted); }
+.trail .sep { color: var(--line); }
+.trail .w.hot { color: var(--hot); text-shadow: var(--glow); }
+.trail .w.weak { color: var(--warm); opacity: .65; }
+.trail .w .p { font-size: 11px; font-weight: 700; color: var(--push);
+  margin-left: 3px; font-variant-numeric: tabular-nums; opacity: .85; }
+
+/* --- Current word --------------------------------------------------------- */
+.current { text-align: center; margin: 6px 0 20px; }
+.current .from { font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--muted); }
+.current .word { position: relative; display: inline-block;
+  font-size: clamp(40px, 9vw, 76px); font-weight: 900;
+  letter-spacing: -.02em; line-height: 1;
+  background: linear-gradient(180deg, #fff, #b9c0d6);
+  -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* --- Juice "mot rare" : glow doré + gerbe d'étincelles -------------------- */
+.current .word.rareglow { animation: rareGlow .85s ease-out; }
+@keyframes rareGlow {
+  0%, 100% { filter: none; }
+  30% { filter: drop-shadow(0 0 16px var(--warm)) drop-shadow(0 0 34px var(--hot)); }
+}
+.spark { position: absolute; left: 50%; top: 45%; width: 7px; height: 7px;
+  margin: -3px 0 0 -3px; border-radius: 50%; background: var(--warm);
+  box-shadow: 0 0 8px var(--warm), 0 0 15px var(--hot); pointer-events: none;
+  animation: sparkfly .72s ease-out forwards; }
+@keyframes sparkfly {
+  0%   { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--dx, 0), var(--dy, 0)) scale(.2); opacity: 0; }
+}
+
+/* --- Detail panel (breakdown du dernier hop) ------------------------------ */
+.detail { background: var(--bg2); border: 1px solid var(--line); border-radius: 12px;
+  padding: 12px 16px; margin-bottom: 16px; min-height: 96px;
+  opacity: .55; transition: opacity .2s; }
+.detail.live { opacity: 1; }
+.detail.weak { border-color: var(--warm); }
+.detail.reject { border-color: var(--bail); }
+.dhead { display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 10px; }
+.dhead #dword { font-size: 18px; font-weight: 800; }
+.dhead .dpts { font-size: 22px; font-weight: 900; color: var(--push);
+  font-variant-numeric: tabular-nums; }
+.dbars { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 20px; }
+.dbar { display: flex; align-items: center; gap: 8px; font-size: 11px;
+  color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+.dbar > span { width: 84px; flex: none; }
+.dbar > i { flex: 1; height: 7px; background: var(--line); border-radius: 4px;
+  overflow: hidden; }
+.dbar > i > b { display: block; height: 100%; width: 0;
+  background: linear-gradient(90deg, var(--cool), var(--hot));
+  transition: width .25s; }
+.dbar > u { width: 38px; flex: none; text-align: right; font-style: normal;
+  font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 700;
+  font-size: 12px; }
+.dnote { margin-top: 10px; font-size: 11px; color: var(--muted);
+  letter-spacing: .02em; text-align: center; opacity: .85; }
+
+/* étiquette de zone ("le lien" / "le score") — lisibilité arcade */
+.zlbl { font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--muted); font-weight: 800; margin-bottom: 8px; }
+.zlbl span { opacity: .55; font-weight: 600; letter-spacing: .06em; }
+
+/* --- LE LIEN : portail (proximité) + ressemblance (malus) ----------------- */
+.gates { background: var(--bg2); border: 1px solid var(--line); border-radius: 12px;
+  padding: 12px 16px; margin-bottom: 14px; }
+.portal { margin-bottom: 0; }
+.portal + .portal { margin-top: 12px; }
+.phead { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px;
+  font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.phead b { color: var(--ink); font-weight: 800; font-variant-numeric: tabular-nums;
+  text-transform: none; letter-spacing: 0; }
+.phead #pverdict { margin-left: auto; font-weight: 900; letter-spacing: .04em; }
+.ptrack { position: relative; display: flex; height: 12px; border-radius: 6px;
+  overflow: hidden; background: var(--bg2); }
+.pz { height: 100%; }
+.pz.rej   { background: rgba(255, 59, 87, .30); }
+.pz.far   { background: rgba(255, 176, 58, .30); }
+.pz.sweet { background: rgba(53, 208, 186, .48); }
+.pz.syno  { background: rgba(255, 176, 58, .30); }
+.pmark { position: absolute; top: -3px; left: 0; width: 3px; height: 18px;
+  background: #fff; border-radius: 2px; box-shadow: 0 0 7px rgba(255, 255, 255, .85);
+  transition: left .2s ease-out; }
+
+/* ressemblance = MALUS : jauge rouge + badge "écho" quand elle pénalise */
+.portal.malus .phead #mflag { margin-left: auto; font-weight: 900; letter-spacing: .04em;
+  color: var(--bail); }
+.mtrack { height: 8px; border-radius: 5px; overflow: hidden; background: var(--line); }
+.mtrack > i { display: block; height: 100%; width: 0;
+  background: linear-gradient(90deg, #6a5030, var(--bail)); transition: width .25s; }
+.portal.malus.hot .mtrack > i { box-shadow: 0 0 10px var(--bail); }
+.portal.malus.hot .phead b { color: var(--bail); }
+
+/* --- Input ---------------------------------------------------------------- */
+.inrow { display: flex; gap: 10px; }
+#guess { flex: 1; background: var(--bg2); border: 1.5px solid var(--line);
+  color: var(--ink); font-size: 22px; font-weight: 700; padding: 14px 18px;
+  border-radius: 12px; outline: none; transition: border-color .15s, box-shadow .15s; }
+#guess:focus { border-color: var(--hot); box-shadow: 0 0 0 3px rgba(255,90,60,.15); }
+#guess.shake { animation: shake .3s; }
+#bank { background: var(--bank); color: #04120f; border: none; font-weight: 900;
+  font-size: 15px; letter-spacing: .05em; padding: 0 22px; border-radius: 12px;
+  cursor: pointer; transition: transform .1s, filter .15s; }
+#bank:hover { filter: brightness(1.1); }
+#bank:active { transform: scale(.96); }
+#bank:disabled { opacity: .35; cursor: default; }
+
+.hint { text-align: center; color: var(--muted); font-size: 12px; margin-top: 14px; }
+.hint kbd { background: var(--bg2); border: 1px solid var(--line); border-radius: 4px;
+  padding: 1px 6px; font-size: 11px; }
+
+/* --- Toast feedback ------------------------------------------------------- */
+.toast { position: fixed; left: 50%; top: 30%; transform: translateX(-50%);
+  pointer-events: none; text-align: center; }
+.toast .big { font-size: 46px; font-weight: 900; }
+.toast .sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.toast.pop { animation: pop .7s ease-out forwards; }
+.toast.bank .big { color: var(--bank); }
+.toast.weakt .big { color: var(--warm); }
+.toast.rare .big { color: var(--warm); text-shadow: 0 0 24px var(--warm), 0 0 44px var(--hot); }
+.toast .sub.rare { color: var(--hot); font-weight: 900; letter-spacing: .12em; margin-top: 0; }
+.dhead small { font-size: 12px; font-weight: 600; color: var(--muted); }
+
+@keyframes pop {
+  0% { opacity: 0; transform: translateX(-50%) translateY(10px) scale(.85); }
+  20% { opacity: 1; transform: translateX(-50%) translateY(-6px) scale(1.05); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-40px) scale(1); }
+}
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  25% { transform: translateX(-8px); } 75% { transform: translateX(8px); }
+}
+.flashbail { animation: flashbail .4s; }
+@keyframes flashbail {
+  0% { background: rgba(255,59,87,.25); } 100% { background: transparent; }
+}
+
+/* --- End screen ----------------------------------------------------------- */
+.end { position: fixed; inset: 0; background: rgba(8,9,14,.92);
+  display: none; align-items: center; justify-content: center; flex-direction: column;
+  gap: 8px; z-index: 20; }
+.end.show { display: flex; }
+.end h1 { font-size: 18px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--muted); }
+.end .final { font-size: 84px; font-weight: 900; color: var(--bank); }
+.end .best { color: var(--warm); font-weight: 700; }
+.end button { margin-top: 18px; background: var(--hot); color: #150402; border: none;
+  font-weight: 900; font-size: 16px; padding: 14px 34px; border-radius: 12px;
+  cursor: pointer; box-shadow: var(--glow); }
+.end .recap { color: var(--muted); font-size: 13px; max-width: 460px; text-align: center;
+  margin-top: 10px; line-height: 1.6; }
+/* écran de départ : "Vocabulium" en vrai titre */
+.start h1 { font-size: clamp(46px, 11vw, 84px); font-weight: 900; letter-spacing: -.03em;
+  text-transform: none; color: transparent; margin-bottom: 4px;
+  background: linear-gradient(180deg, #fff, #b9c0d6);
+  -webkit-background-clip: text; background-clip: text; }

@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Données générées / vides (le dictionnaire = le modèle FastText, non versionné)
+data/
+
+# Config de lancement locale (chemins absolus machine-spécifiques)
+.claude/
+
+# Ancien clone GitHub imbriqué par erreur (déjà sur github.com/Vannelier/motfil)
+/motfil/

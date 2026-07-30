@@ -1,0 +1,8 @@
+# Dépendances runtime du backend Vocabulium.
+fastapi>=0.110
+uvicorn>=0.27
+pydantic>=2.0
+# Le modèle FastText EST le dictionnaire + la proximité (chargé en mmap au boot) :
+gensim>=4.3,<5.0
+numpy>=1.26
+wordfreq>=3.0     # filtre "vrai mot FR" (le dictionnaire jouable)
