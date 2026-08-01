@@ -209,6 +209,18 @@ function pushTrail(word, hot, weak, gained) {
   p.className = "p"; p.textContent = "+" + Math.round(gained);
   w.appendChild(p);
   el.trail.appendChild(w);
+  trimTrail();
+}
+
+// Garde la trace à ~3 lignes max : tant que ça déborde, on retire les plus
+// vieux (FIFO) — le mot et son séparateur — pour que l'écran ne soit pas envahi.
+function trimTrail() {
+  while (el.trail.scrollHeight > el.trail.clientHeight + 1
+         && el.trail.children.length > 1) {
+    el.trail.removeChild(el.trail.firstChild);                     // mot le plus ancien
+    if (el.trail.firstChild && el.trail.firstChild.classList.contains("sep"))
+      el.trail.removeChild(el.trail.firstChild);                   // son séparateur
+  }
 }
 
 function toastScore(n, cls, rare) {

@@ -86,7 +86,10 @@ def get_neighbors(word: str):
 
 @app.get("/")
 def index():
-    return FileResponse(WEB_DIR / "index.html")
+    # no-cache : le HTML est toujours revalidé -> les mises à jour (et les ?v= des
+    # assets) s'appliquent sans rechargement forcé.
+    return FileResponse(WEB_DIR / "index.html",
+                        headers={"Cache-Control": "no-cache"})
 
 
 app.mount("/", StaticFiles(directory=WEB_DIR), name="web")

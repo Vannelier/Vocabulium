@@ -77,8 +77,9 @@ body {
   transform-origin: left; transition: transform .2s linear; }
 
 /* --- Trail ---------------------------------------------------------------- */
-.trail { display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
-  min-height: 30px; margin-bottom: 10px; opacity: .8; font-size: 14px; }
+.trail { display: flex; flex-wrap: wrap; gap: 6px 6px; align-content: flex-start;
+  align-items: center; min-height: 24px; max-height: 78px; overflow: hidden;
+  margin-bottom: 10px; opacity: .8; font-size: 14px; line-height: 1.4; }
 .trail .w { color: var(--muted); }
 .trail .sep { color: var(--line); }
 .trail .w.hot { color: var(--hot); text-shadow: var(--glow); }
