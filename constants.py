@@ -73,11 +73,14 @@ ROOT_FRAC = 0.6
 
 # --- Fréquence (rareté) -----------------------------------------------------
 # Zipf (wordfreq) : ~7 = ultra courant, ~2 = rare. rarete = plus rare -> plus haut.
-# ZIPF_MIN bas (1.0) évite que tout le bas du vocab (zipf 2.0-2.5) sature à 1.0 :
-# "nichon" (zipf 2.27) tombe à ~0.75 au lieu de 1.00. Limite de fond : la fréquence
-# ÉCRITE surestime la rareté des mots tabous/argot (connus mais peu écrits) — seul
-# un lexique de familiarité corrigerait vraiment ça.
-ZIPF_MIN = 1.0           # zipf <= MIN  -> rarete = 1.0
+# ZIPF_MIN est calé JUSTE SOUS le plancher du vocab jouable (VOCAB_ZIPF_MIN = 2.0)
+# pour que les mots vraiment rares approchent 1.0 sans y saturer tout de suite :
+# "freudien" (zipf 2.43) monte à ~0.79, le mot le plus rare (zipf 2.0) à ~0.90.
+# Le laisser trop bas (ex. 1.0) tassait tout le haut du vocab (freudien plafonnait
+# à 0.71) — l'échelle n'utilisait alors qu'une fraction de son range. Limite de
+# fond : la fréquence ÉCRITE surestime la rareté des mots tabous/argot (connus mais
+# peu écrits) — seul un lexique de familiarité corrigerait vraiment ça.
+ZIPF_MIN = 1.5           # zipf <= MIN  -> rarete = 1.0
 ZIPF_MAX = 6.0           # zipf >= MAX  -> rarete = 0.0
 
 # --- Poids de la formule de hop ---------------------------------------------
