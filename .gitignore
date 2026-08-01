@@ -3,8 +3,10 @@ __pycache__/
 *.pyc
 .venv/
 
-# Données générées / vides (le dictionnaire = le modèle FastText, non versionné)
-data/
+# data/ : on VERSIONNE l'artefact compact déployable (~50 Mo), rien d'autre.
+data/*
+!data/vectors.f16.npy
+!data/vocab.json
 
 # Config de lancement locale (chemins absolus machine-spécifiques)
 .claude/

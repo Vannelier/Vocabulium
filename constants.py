@@ -10,10 +10,16 @@ from pathlib import Path
 
 # --- Chemins ----------------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parent
+DATA_DIR = PROJECT_ROOT / "data"
 
-# Asset réutilisé depuis Discoverix (LECTURE SEULE — jamais modifié).
-# On pointe directement sur le .kv gensim (mmap) plutôt que d'importer le
-# package Discoverix, pour garder le proto découplé.
+# Artefact DÉPLOYABLE (~50 Mo) : uniquement les vecteurs des mots jouables, en
+# float16, + la liste des mots et leur zipf. C'est ce qui tourne en prod (Railway)
+# — pas de modèle 2,4 Go, pas de volume. Généré par tools/export_vectors.py.
+VECTORS_NPY = DATA_DIR / "vectors.f16.npy"
+VOCAB_JSON = DATA_DIR / "vocab.json"
+
+# Modèle FastText complet (2M mots) — présent seulement en DEV local (Discoverix,
+# LECTURE SEULE). Sert à (re)générer l'artefact et à calibrer le vocab en direct.
 DISCOVERIX_ROOT = PROJECT_ROOT.parent / "Discoverix"
 FASTTEXT_KV = DISCOVERIX_ROOT / "data" / "fasttext" / "cc.fr.300.2M.kv"
 

@@ -1,8 +1,6 @@
-# Dépendances runtime du backend Vocabulium.
+# Dépendances RUNTIME (prod). L'app charge l'artefact compact data/vectors.f16.npy
+# -> ni gensim ni wordfreq nécessaires en ligne. Léger et rapide à builder.
 fastapi>=0.110
 uvicorn>=0.27
 pydantic>=2.0
-# Le modèle FastText EST le dictionnaire + la proximité (chargé en mmap au boot) :
-gensim>=4.3,<5.0
 numpy>=1.26
-wordfreq>=3.0     # filtre "vrai mot FR" (le dictionnaire jouable)

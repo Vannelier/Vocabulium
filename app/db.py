@@ -1,19 +1,24 @@
-"""Vocab + proximité + spécificité, entièrement au runtime depuis le modèle.
+"""Vocab + proximité — deux modes de chargement, une seule interface.
 
-Le dictionnaire EST le modèle FastText : un mot est jouable s'il a un vecteur ET
-que wordfreq le reconnaît (zipf >= VOCAB_ZIPF_MIN). Aucune base, aucun rebuild —
-tout est reconstruit en mémoire au démarrage (~3 s) :
+Le jeu n'a besoin, par mot jouable, que de son VECTEUR (300-d, normalisé) et de sa
+fréquence Zipf. Deux sources possibles :
 
-  - `_valid`   : mots jouables (modèle ∩ wordfreq), avec leur zipf, indexés par forme
-  - `_fold`    : index sans accents, pour tolérer une saisie relâchée
-  - `_R`       : matrice des REF_SIZE mots les plus fréquents, pour le degré (spécificité)
+  • PROD / déploiement : l'artefact compact `data/vectors.f16.npy` (+ `vocab.json`)
+    — ~50 Mo, aucune dépendance lourde. C'est ce qui tourne sur Railway.
+  • DEV local : le modèle FastText complet (2M mots) via Discoverix, qui permet de
+    (re)générer l'artefact et de recalibrer le vocab en direct.
 
-Proximité = cosinus des deux vecteurs (produit scalaire). Spécificité = degré de G
-contre `_R` (un produit matrice-vecteur, ~9 ms). Changer VOCAB_ZIPF_MIN / TAU /
-SYNO : il suffit de redémarrer.
+Dans les deux cas on aboutit à la même chose en mémoire :
+  - `_M`       : matrice (N × 300) des vecteurs jouables, NORMALISÉS
+  - `_id2word` : mot de chaque ligne
+  - `_zipf`    : fréquence par mot
+  - `_fold`    : index sans accents (saisie relâchée)
+
+Proximité P->G = `_M[idP] · _M[idG]` (un produit scalaire). Rien d'autre au runtime.
 """
 from __future__ import annotations
 
+import json
 import sys
 import unicodedata
 from pathlib import Path
@@ -32,20 +37,44 @@ def fold(word: str) -> str:
 
 
 class Vocab:
-    def __init__(self):
+    def __init__(self, force_kv: bool = False):
+        if force_kv:
+            self._build_from_kv()
+        elif C.VECTORS_NPY.exists() and C.VOCAB_JSON.exists():
+            self._load_compact()
+        elif C.FASTTEXT_KV.exists():
+            self._build_from_kv()
+        else:
+            raise FileNotFoundError(
+                f"Ni l'artefact compact ({C.VECTORS_NPY.name}) ni le modèle FastText "
+                f"({C.FASTTEXT_KV}) ne sont présents. Génère l'artefact avec "
+                f"tools/export_vectors.py, ou fournis le modèle."
+            )
+        self._finalize()
+
+    # --- sources --------------------------------------------------------------
+    def _load_compact(self):
+        """Prod : vecteurs float16 + liste de mots (aucune dépendance ML)."""
+        M = np.load(C.VECTORS_NPY).astype("float32")
+        M /= np.linalg.norm(M, axis=1, keepdims=True)   # renormalise (arrondi f16)
+        self._M = M
+        meta = json.loads(C.VOCAB_JSON.read_text(encoding="utf-8"))
+        self._id2word = meta["words"]
+        self._zipf = dict(zip(meta["words"], meta["zipf"]))
+
+    def _build_from_kv(self):
+        """Dev : reconstruit depuis le modèle 2M (gensim + wordfreq).
+        Mots jouables = top-KV_SCAN ∩ wordfreq, hors mots-outils / noms propres."""
         if not C.FASTTEXT_KV.exists():
             raise FileNotFoundError(f"Modèle FastText introuvable : {C.FASTTEXT_KV}")
         from gensim.models import KeyedVectors
         from wordfreq import zipf_frequency
 
-        self._kv = KeyedVectors.load(str(C.FASTTEXT_KV), mmap="r")
-
-        # Vocab jouable = top-KV_SCAN du modèle (freq-ordonné) ∩ wordfreq.
-        self._zipf: dict[str, float] = {}
-        self._fold: dict[str, str] = {}
-        k2i = self._kv.key_to_index
-        order: list[str] = []          # mots jouables, ordre de fréquence de corpus
-        for rank_w, w in enumerate(self._kv.index_to_key[: C.KV_SCAN]):
+        kv = KeyedVectors.load(str(C.FASTTEXT_KV), mmap="r")
+        k2i = kv.key_to_index
+        order: list[str] = []
+        self._zipf = {}
+        for rank_w, w in enumerate(kv.index_to_key[: C.KV_SCAN]):
             if not w.isalpha() or not w.islower():
                 continue
             if len(w) < C.MIN_WORD_LEN and w not in C.SHORT_WORDS:
@@ -53,57 +82,56 @@ class Vocab:
             z = zipf_frequency(w, "fr")
             if z < C.VOCAB_ZIPF_MIN:
                 continue
-            # nom propre : la forme Capitalisée domine nettement (john, paris…)
-            cap_rank = k2i.get(w.capitalize())
+            cap_rank = k2i.get(w.capitalize())            # nom propre : Majuscule domine
             if cap_rank is not None and rank_w >= C.PROPER_NOUN_RATIO * cap_rank:
                 continue
-            self._zipf[w] = z
-            self._fold.setdefault(fold(w), w)
             order.append(w)
+            self._zipf[w] = z
+        M = np.stack([kv[w] for w in order]).astype("float32")
+        M /= np.linalg.norm(M, axis=1, keepdims=True)
+        self._M = M
+        self._id2word = order
 
-        # Matrice de référence (top mots), pour retrouver les voisins d'un mot
-        # (endpoint de debug / révélation). Ne sert plus au scoring.
-        self._ref_words = order[: C.REF_SIZE]
-        R = np.stack([self._kv[w] for w in self._ref_words]).astype("float32")
-        R /= np.linalg.norm(R, axis=1, keepdims=True)
-        self._R = R
-
-        # Pool de seeds (bande de fréquence moyenne), figé au démarrage.
+    def _finalize(self):
+        self._words = {w: i for i, w in enumerate(self._id2word)}   # mot -> ligne
+        self._fold = {}
+        for w in self._id2word:
+            self._fold.setdefault(fold(w), w)
         self._seed_pool = sorted(
-            w for w, z in self._zipf.items()
-            if C.SEED_ZIPF_MIN <= z <= C.SEED_ZIPF_MAX
+            w for w in self._id2word
+            if C.SEED_ZIPF_MIN <= self._zipf[w] <= C.SEED_ZIPF_MAX
         )
-        self.vocab_size = len(order)
+        self.vocab_size = len(self._id2word)
 
     # --- lookups --------------------------------------------------------------
     def canonical(self, word: str) -> str | None:
         """Forme jouable du mot, ou None. Tolère casse et accents manquants."""
         w = word.strip().lower()
-        if w in self._zipf:
+        if w in self._words:
             return w
         return self._fold.get(fold(w))
 
     def zipf(self, word: str) -> float:
         return self._zipf.get(word, 0.0)
 
-    def _unit(self, word: str) -> np.ndarray:
-        v = self._kv[word].astype("float32")
-        return v / np.linalg.norm(v)
-
     def prox(self, prev: str, nxt: str) -> float:
-        """Cosinus prev->nxt (formes canoniques), borné à 0."""
-        return max(0.0, float(self._unit(prev) @ self._unit(nxt)))
+        """Cosinus prev->nxt (formes canoniques, vecteurs déjà normalisés)."""
+        a = self._words.get(prev)
+        b = self._words.get(nxt)
+        if a is None or b is None:
+            return 0.0
+        return max(0.0, float(self._M[a] @ self._M[b]))
 
     def top_neighbors(self, word: str, limit: int = 12):
-        """Meilleurs voisins parmi les mots de référence (debug / révélation)."""
+        """Meilleurs voisins (debug / révélation). Balayage complet du vocab."""
         c = self.canonical(word)
         if c is None:
             return []
-        sims = self._R @ self._unit(c)
+        sims = self._M @ self._M[self._words[c]]
         idx = np.argpartition(-sims, limit + 1)[: limit + 1]
         idx = idx[np.argsort(-sims[idx])]
-        return [(self._ref_words[i], float(sims[i])) for i in idx
-                if self._ref_words[i] != c][:limit]
+        return [(self._id2word[i], float(sims[i])) for i in idx
+                if self._id2word[i] != c][:limit]
 
     def seed_pool(self) -> list[str]:
         return self._seed_pool

@@ -1,0 +1,5 @@
+# Dépendances OFFLINE, uniquement pour (re)générer l'artefact compact
+# (tools/export_vectors.py) depuis le modèle FastText complet. Pas requises en prod.
+gensim>=4.3,<5.0
+wordfreq>=3.0
+numpy>=1.26
