@@ -109,7 +109,12 @@ WEAK_REFILL = 0.45         # un hop faible remonte la jauge jusqu'à ce niveau m
 KEEP_PENDING_ON_TIMEOUT = False
 
 # --- Sélection du mot de départ ---------------------------------------------
-# On tire le seed parmi les mots jouables d'une bande de fréquence moyenne :
-# ni trop rares (imprononçables) ni mots-outils hyper courants.
-SEED_ZIPF_MIN = 3.2
+# On tire le seed parmi les mots jouables d'une bande de fréquence moyenne-haute :
+# ni trop rares, ni mots-outils hyper courants. Le mot de DÉPART doit être franchement
+# classique (le jeu accepte large ensuite) — d'où un plancher plus haut que le vocab.
+# À 3.2 la bande basse était polluée de mauvais seeds pourtant fréquents en français
+# ÉCRIT : anglicismes (kirby, friday, against, area), conjugaisons/pluriels (ajoutons,
+# arrivèrent), abréviations (bnf, cdg). 3.8 nettoie cette traîne tout en gardant ~8800
+# mots de départ (cool 4.86, football 4.75, pizza 4.10 restent bien dans la bande).
+SEED_ZIPF_MIN = 3.8
 SEED_ZIPF_MAX = 5.6
