@@ -32,14 +32,17 @@ def speed_bonus(t: float) -> float:
 
 
 def same_root(a: str, b: str) -> bool:
-    """True si a et b partagent une longue racine (dérivation : rapide/rapidement).
-    Un tel hop est un pont fainéant, à minorer même si le cosinus est en zone forte."""
+    """True si a et b partagent une racine (dérivation : rapide/rapidement,
+    génie/génial). Pont fainéant, à minorer même si le cosinus est en zone forte.
+    Voir constants.py pour la règle (préfixe + longueur mini + fraction)."""
     n = 0
     for x, y in zip(a, b):
         if x != y:
             break
         n += 1
-    return n >= C.ROOT_MIN_PREFIX and n >= C.ROOT_FRAC * min(len(a), len(b))
+    m = min(len(a), len(b))
+    return (n >= C.ROOT_MIN_PREFIX and m >= C.ROOT_MIN_LEN
+            and n >= C.ROOT_FRAC * m)
 
 
 def resemblance(prox: float, root: bool) -> float:

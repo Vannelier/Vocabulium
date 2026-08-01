@@ -60,12 +60,16 @@ TAU = 0.30
 SYNO = 0.62              # au-delà : quasi-synonyme (royaliste~royalistes 0.74, chat~chats 0.74)
 WEAK_POINTS_FACTOR = 0.35  # un hop faible rapporte ~1/3 d'un hop fort équivalent
 
-# Anti-dérivation : un mot qui partage une longue racine avec le précédent
-# (rapide->rapidement, grand->grande, sénégal->sénégalais) est un pont fainéant.
-# On le traite comme un synonyme (faible, pas de combo) même si son cosinus tombe
-# en zone forte. Préfixe commun >= ROOT_MIN_PREFIX ET >= ROOT_FRAC du plus court.
-ROOT_MIN_PREFIX = 5      # "port"/"porte" (4) épargnés ; "rapide"/"rapidement" (6) attrapés
-ROOT_FRAC = 0.6          # évite qu'un préfixe court partagé (const-itution/const-ruction) flague
+# Anti-dérivation : un mot qui partage une racine avec le précédent
+# (rapide->rapidement, grand->grande, génie->génial) est un pont fainéant. On le
+# traite comme un synonyme (faible, pas de combo) même si son cosinus est en zone
+# forte. Règle : préfixe commun >= ROOT_MIN_PREFIX, ET les DEUX mots >= ROOT_MIN_LEN
+# (sinon "port"/"porte" : le préfixe EST le mot court -> deux mots distincts), ET
+# préfixe >= ROOT_FRAC du plus court (évite const-itution/const-ruction).
+# Les dérivations de mots très courts (chat/chats) sont couvertes par SYNO (cos élevé).
+ROOT_MIN_PREFIX = 4      # géni-e / géni-al partagent 4
+ROOT_MIN_LEN = 5         # ... mais port(4)/porte épargnés (mot court == préfixe)
+ROOT_FRAC = 0.6
 
 # --- Fréquence (rareté) -----------------------------------------------------
 # Zipf (wordfreq) : ~7 = ultra courant, ~2 = rare. rarete = plus rare -> plus haut.
