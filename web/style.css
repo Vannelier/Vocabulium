@@ -21,9 +21,13 @@ body {
   color: var(--ink);
   font-family: "Segoe UI", system-ui, sans-serif;
   min-height: 100vh;
+  min-height: 100dvh;                 /* suit la zone visible (barres + clavier) */
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
 }
+/* Clavier virtuel ouvert (mobile) : on ancre en haut et on autorise le défilement
+   pour que la saisie reste atteignable au-dessus du clavier. */
+body.kb-open { align-items: flex-start; overflow-y: auto; }
 
 #app { width: min(720px, 94vw); padding: 20px; }
 
@@ -102,12 +106,12 @@ body {
   margin-bottom: 6px; }
 .forbid-next { font-weight: 800; color: var(--warm); letter-spacing: .02em; }
 .forbid-letters { display: flex; flex-wrap: wrap; gap: 8px; min-height: 34px; }
+/* Pas de barre sur la lettre (nuisait à la lisibilité) : le fond + la bordure +
+   la couleur rouge suffisent à la lire comme « interdite ». */
 .forbid-letters .fl { display: inline-flex; align-items: center; justify-content: center;
   width: 30px; height: 34px; border-radius: 8px; background: rgba(255,59,87,.14);
   border: 1.5px solid var(--bail); color: var(--bail); font-weight: 900; font-size: 19px;
-  text-transform: uppercase; position: relative; }
-.forbid-letters .fl::after { content: ""; position: absolute; left: 4px; right: 4px;
-  height: 2.5px; background: var(--bail); transform: rotate(-12deg); }
+  text-transform: uppercase; }
 .forbid-empty { color: var(--muted); font-size: 12px; opacity: .7; align-self: center; }
 .forbid-letters .fl.blink { animation: flblink .5s ease-out 3; }
 @keyframes flblink {
@@ -121,6 +125,16 @@ body {
 @keyframes rareGlow {
   0%, 100% { filter: none; }
   30% { filter: drop-shadow(0 0 16px var(--warm)) drop-shadow(0 0 34px var(--hot)); }
+}
+
+/* Hop trop loin : le mot d'ancrage NE change PAS -> il pulse une fois en bleu
+   (couleur neutre, ni rouge/erreur ni vert/succès) pour dire « toujours celui-ci ».
+   On anime background-image (et pas color) car le mot est un texte en dégradé clippé. */
+.current .word.samehold { animation: samehold .6s ease-out; }
+@keyframes samehold {
+  0%, 100% { background-image: linear-gradient(180deg, #fff, #b9c0d6); filter: none; }
+  25%, 55% { background-image: linear-gradient(180deg, #8ec5ff, #3a86ff);
+             filter: drop-shadow(0 0 12px rgba(90,169,255,.75)); }
 }
 .spark { position: absolute; left: 50%; top: 45%; width: 7px; height: 7px;
   margin: -3px 0 0 -3px; border-radius: 50%; background: var(--warm);
@@ -247,6 +261,42 @@ body {
   15% { opacity: 1; transform: translateX(-50%) scale(1.12); }
   70% { opacity: 1; transform: translateX(-50%) scale(1); }
   100% { opacity: 0; transform: translateX(-50%) scale(1); }
+}
+
+/* --- High score : bannière live dorée + record de fin --------------------- */
+.recordbeat { position: fixed; left: 50%; top: 24%; transform: translateX(-50%);
+  pointer-events: none; text-align: center; z-index: 31; opacity: 0; }
+.recordbeat .rb1 { font-size: clamp(24px, 7vw, 46px); font-weight: 900;
+  letter-spacing: .05em; text-transform: uppercase; color: #ffd34e;
+  text-shadow: 0 0 22px rgba(255,211,78,.85), 0 0 48px rgba(255,176,58,.6); }
+.recordbeat.play { animation: recordpop 1.5s ease-out forwards; }
+@keyframes recordpop {
+  0% { opacity: 0; transform: translateX(-50%) scale(.6) rotate(-3deg); }
+  12% { opacity: 1; transform: translateX(-50%) scale(1.15) rotate(2deg); }
+  30% { transform: translateX(-50%) scale(1) rotate(0); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-50%) scale(1); }
+}
+/* le score reste doré et pulse tant qu'on tient le record en jeu */
+#pnum.record { color: #ffd34e; text-shadow: 0 0 14px rgba(255,211,78,.8);
+  animation: recordpulse 1.1s ease-in-out infinite; }
+@keyframes recordpulse {
+  0%,100% { text-shadow: 0 0 10px rgba(255,211,78,.55); }
+  50% { text-shadow: 0 0 22px rgba(255,211,78,.95), 0 0 40px rgba(255,176,58,.6); }
+}
+/* ligne « record » sur l'écran de fin (dorée + pop si battu cette partie) */
+.endrecord { font-size: 14px; font-weight: 800; color: var(--muted);
+  letter-spacing: .04em; text-transform: uppercase; }
+.endrecord b { color: var(--push); font-size: 18px; }
+.endrecord.hit { color: #ffd34e; animation: recordbadge 1.4s ease-out; }
+.endrecord.hit b { color: #ffd34e; }
+/* on n'anime PAS l'opacité (sinon la ligne reste invisible en fin d'anim) : le
+   « pop » est un scale + un halo, la ligne est toujours lisible au repos. */
+@keyframes recordbadge {
+  0% { transform: scale(.7); }
+  25% { transform: scale(1.25); text-shadow: 0 0 26px rgba(255,211,78,.9); }
+  60% { transform: scale(1); }
+  100% { transform: scale(1); }
 }
 
 .endbtns { display: flex; gap: 12px; margin-top: 16px; }

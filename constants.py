@@ -104,8 +104,8 @@ MULT_MAX = 4.0           # plafond du multiplicateur
 # bon mot. Le run finit quand elle atteint 0. Le vrai risque du "push" : si elle
 # se vide avec du pending non encaissé, ce pending est PERDU (mets True pour
 # revenir à l'auto-encaissement doux de l'ancien MVP).
-GAUGE_SECONDS = 15.0       # temps de vidage complet (plein -> vide) sans action
-WEAK_REFILL = 0.45         # un hop faible remonte la jauge jusqu'à ce niveau max
+GAUGE_SECONDS = 18.0       # temps de vidage complet (plein -> vide) sans action
+WEAK_REFILL = 0.62         # un hop faible remonte la jauge jusqu'à ce niveau max
 KEEP_PENDING_ON_TIMEOUT = False
 
 # --- Sélection du mot de départ ---------------------------------------------
@@ -118,3 +118,67 @@ KEEP_PENDING_ON_TIMEOUT = False
 # mots de départ (cool 4.86, football 4.75, pizza 4.10 restent bien dans la bande).
 SEED_ZIPF_MIN = 3.8
 SEED_ZIPF_MAX = 5.6
+
+# Filtre anti-vulgarité — pour le MOT DE DÉPART UNIQUEMENT. Beaucoup de mots crus
+# (merde, cul, pute…) tombent pile dans la bande de fréquence des seeds (3.8–5.6)
+# et feraient un « mot du jour » gênant, imposé à tout le monde. On les exclut du
+# pool de départ. NB : ça ne bride EN RIEN les réponses du joueur — il enchaîne ce
+# qu'il veut ; ça ne concerne que le mot tiré au démarrage. La comparaison se fait
+# sans accents ni casse et par MOT ENTIER (fold), donc "con" n'écarte pas
+# "concert" ni "cul" "culture". Liste volontairement explicite (pas de racines).
+SEED_BLOCKLIST = {
+    # sexe / anatomie crue
+    "bite", "bites", "zob", "zobs", "zizi", "zizis", "couille", "couilles",
+    "penis", "penis", "bite", "vagin", "vagins", "chatte", "chattes",
+    "nichon", "nichons", "teton", "tetons", "anus", "sodomie", "sodomiser",
+    "fellation", "orgasme", "orgasmes", "ejaculation", "ejaculer", "sperme",
+    "capote", "capotes", "gode", "godes", "godemichet", "branler", "branlette",
+    "branlettes", "branleur", "masturbation", "masturber", "erection",
+    # actes crus
+    "baiser", "baise", "baises", "niquer", "nique", "niques", "foutre",
+    # scato
+    "merde", "merdes", "merdique", "merder", "chier", "chiant", "chiante",
+    "chie", "pisse", "pisser", "pisses", "crotte", "crottes", "etron", "etrons",
+    # insultes vulgaires
+    "con", "cons", "conne", "connes", "connard", "connards", "connasse",
+    "connasses", "salope", "salopes", "salaud", "salauds", "salopard",
+    "salopards", "pute", "putes", "putain", "putains", "encule", "enculer",
+    "encules", "enculee", "enculees", "enfoire", "enfoires", "batard",
+    "batards", "pouffiasse", "cul", "culs", "bordel", "bordels", "emmerde",
+    "emmerder", "emmerdeur", "emmerdeuse", "emmerdement",
+    # prostitution
+    "prostituee", "prostituees",
+    # slurs (racistes / homophobes)
+    "pd", "pede", "tapette", "tapettes", "gouine", "gouines", "negre",
+    "negres", "negro", "negresse", "bougnoule", "bougnoules", "youpin",
+    "youpins", "bamboula",
+}
+
+# Filtre anti-mots-ternes — pour le MOT DE DÉPART UNIQUEMENT, même principe que
+# SEED_BLOCKLIST. Des mots grammaticaux (déterminants, pronoms, conjonctions,
+# adverbes de liaison) tombent dans la bande de fréquence et font un seed nul :
+# "tels", "dont", "certains"… ne donnent aucune prise sémantique pour enchaîner.
+# On les écarte du départ (le joueur peut toujours les jouer en réponse). Classe
+# fermée -> liste finie et sûre. Comparaison sans accents/casse, par mot entier.
+SEED_STOPLIST = {
+    # déterminants / quantifieurs
+    "tel", "tels", "telle", "telles", "tout", "tous", "toute", "toutes",
+    "chaque", "certain", "certains", "certaine", "certaines", "plusieurs",
+    "aucun", "aucune", "quelque", "quelques", "meme", "memes", "autre",
+    "autres", "nul", "nulle", "divers", "diverses", "maint", "maints",
+    # pronoms
+    "cela", "ceci", "celui", "celle", "ceux", "celles", "dont", "lequel",
+    "laquelle", "lesquels", "lesquelles", "auquel", "duquel", "quiconque",
+    "autrui", "soi", "leur", "leurs", "sien", "sienne", "notre", "votre",
+    "chacun", "chacune", "quelconque",
+    # conjonctions / adverbes de liaison / prépositions
+    "donc", "ainsi", "alors", "cependant", "neanmoins", "toutefois",
+    "pourtant", "puis", "ensuite", "enfin", "aussi", "encore", "deja",
+    "plutot", "presque", "environ", "selon", "malgre", "parmi", "envers",
+    "hormis", "sauf", "voici", "voila", "car", "or", "ni", "mais", "sinon",
+    "lorsque", "puisque", "quoique", "afin", "dès", "des", "pendant",
+    "durant", "avant", "apres", "contre", "vers", "chez", "entre", "sous",
+    "auprès", "auquel",
+    # auxiliaires / semi-vides très courants
+    "etre", "avoir", "ceux",
+}

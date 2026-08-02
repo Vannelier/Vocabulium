@@ -97,9 +97,14 @@ class Vocab:
         self._fold = {}
         for w in self._id2word:
             self._fold.setdefault(fold(w), w)
+        # Pool des mots de DÉPART : bande de fréquence moyenne-haute, moins les mots
+        # vulgaires (fold pour matcher sans accents/casse). Ne touche pas au jeu :
+        # le joueur peut toujours enchaîner ces mots, seul le seed est filtré.
+        excluded = {fold(w) for w in (C.SEED_BLOCKLIST | C.SEED_STOPLIST)}
         self._seed_pool = sorted(
             w for w in self._id2word
             if C.SEED_ZIPF_MIN <= self._zipf[w] <= C.SEED_ZIPF_MAX
+            and fold(w) not in excluded
         )
         self.vocab_size = len(self._id2word)
 
