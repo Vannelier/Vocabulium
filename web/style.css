@@ -22,14 +22,13 @@ body {
   font-family: "Segoe UI", system-ui, sans-serif;
   min-height: 100vh;
   min-height: 100dvh;                 /* suit la zone visible (barres + clavier) */
-  display: flex; align-items: center; justify-content: center;
-  overflow: hidden;
+  /* Centré s'il y a la place, DÉFILABLE sinon (clavier mobile qui rétrécit la vue) :
+     align-items:flex-start + margin auto sur #app -> pas de rognage haut/bas. */
+  display: flex; justify-content: center; align-items: flex-start;
+  overflow-x: hidden;
 }
-/* Clavier virtuel ouvert (mobile) : on ancre en haut et on autorise le défilement
-   pour que la saisie reste atteignable au-dessus du clavier. */
-body.kb-open { align-items: flex-start; overflow-y: auto; }
 
-#app { width: min(720px, 94vw); padding: 20px; }
+#app { width: min(720px, 94vw); padding: 20px; margin: auto 0; }
 
 /* --- HUD ------------------------------------------------------------------ */
 .hud { display: flex; justify-content: space-between; align-items: flex-end;

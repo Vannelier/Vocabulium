@@ -20,7 +20,7 @@ const el = {
   pzRej: $("pz-rej"), pzFar: $("pz-far"), pzSweet: $("pz-sweet"), pzSyno: $("pz-syno"),
   end: $("end"), final: $("final"), recap: $("recap"),
   sharegrid: $("sharegrid"), share: $("share"),
-  again: $("again"), start: $("start"), play: $("play"),
+  menu: $("menu"), start: $("start"), play: $("play"),
   forbidLetters: $("forbidLetters"), forbidNext: $("forbidNext"),
   recordbeat: $("recordbeat"), endrecord: $("endrecord"),
 };
@@ -459,7 +459,7 @@ function endRun() {
   const rows = [];
   for (let i = 0; i < grid.length; i += 10) rows.push(grid.slice(i, i + 10).join(""));
   const share = `Vocabulium — ${S.wordCount} mots, ${letters} lettres interdites 🔥\n`
-    + rows.join("\n") + `\nvocabulium.up.railway.app`;
+    + rows.join("\n") + `\n${location.host}`;
   el.sharegrid.textContent = rows.join("\n");
   el.share.onclick = () => {
     if (navigator.share) navigator.share({ text: share }).catch(() => {});
@@ -469,23 +469,19 @@ function endRun() {
 }
 
 // --- clavier virtuel mobile -------------------------------------------------
-// Sans ça, le clavier recouvre la saisie (body centré + overflow hidden). On
-// détecte l'ouverture via visualViewport (iOS ne redimensionne pas la page) et
-// on bascule en mode défilable ancré en haut, saisie ramenée dans la vue. Sur
-// Chrome Android, interactive-widget=resizes-content réduit déjà la page.
-(function handleKeyboard() {
-  const vv = window.visualViewport;
-  if (!vv) return;
-  let baseH = vv.height;
-  const onResize = () => {
-    baseH = Math.max(baseH, vv.height);              // plus grande hauteur vue = sans clavier
-    const open = baseH - vv.height > 140;            // clavier vraisemblablement ouvert
-    document.body.classList.toggle("kb-open", open);
-    if (open && document.activeElement === el.guess)
-      el.guess.scrollIntoView({ block: "center" });
-  };
-  vv.addEventListener("resize", onResize);
-})();
+// Le layout est désormais défilable (body flex-start + margin auto) : il suffit
+// de ramener la saisie dans la vue quand le clavier s'ouvre (focus) ou quand la
+// zone visible change (visualViewport). block:"end" -> saisie juste au-dessus du
+// clavier, un max de contenu (mot courant, lettres interdites) visible au-dessus.
+function bringInputIntoView() {
+  el.guess.scrollIntoView({ block: "end", behavior: "smooth" });
+}
+el.guess.addEventListener("focus", () => setTimeout(bringInputIntoView, 250));
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", () => {
+    if (document.activeElement === el.guess) bringInputIntoView();
+  });
+}
 
 // --- events -----------------------------------------------------------------
 el.guess.addEventListener("keydown", (e) => {
@@ -502,9 +498,9 @@ async function startWith(mode) {
   await prepareRun();     // re-fetch le seed + re-tire les lettres selon le mode choisi
   startRun();
 }
-el.again.addEventListener("click", async () => {                   // Rejouer : nouvelle partie + chrono immédiat
-  await prepareRun();
-  startRun();
+el.menu.addEventListener("click", () => {          // Menu : revient à l'écran des modes
+  el.end.classList.remove("show");
+  el.start.classList.add("show");
 });
 
 // Au chargement : on prépare la partie et on montre l'écran "Jouer" (chrono à l'arrêt).
