@@ -19,6 +19,7 @@ const el = {
   portal: $("portal"), pprox: $("pprox"), pverdict: $("pverdict"), pmark: $("pmark"),
   pzRej: $("pz-rej"), pzFar: $("pz-far"), pzSweet: $("pz-sweet"), pzSyno: $("pz-syno"),
   end: $("end"), final: $("final"), best: $("best"), recap: $("recap"),
+  sharegrid: $("sharegrid"), share: $("share"),
   again: $("again"), start: $("start"), play: $("play"),
   forbidLetters: $("forbidLetters"), forbidNext: $("forbidNext"),
 };
@@ -33,7 +34,7 @@ const S = {
   current: null, played: new Set(), score: 0, mult: 1,
   lastHopTs: 0, started: false, running: false,
   gauge: 1, lastFrame: 0, hops: 0, weakHops: 0, misses: 0, bestBridge: null,
-  forbiddenOrder: [], wordCount: 0,
+  forbiddenOrder: [], wordCount: 0, zonesPlayed: [],
 };
 
 const MISS_LIMIT = 2;   // 1er raté : le mult tressaille · 2e raté consécutif : reset ×1
@@ -65,6 +66,7 @@ async function prepareRun() {
     score: 0, mult: 1, lastHopTs: 0,
     started: false, running: false, gauge: 1, lastFrame: 0,
     hops: 0, weakHops: 0, misses: 0, bestBridge: null, wordCount: 0,
+    zonesPlayed: [],
   });
   el.trail.innerHTML = "";
   el.current.textContent = seedWord;
@@ -358,6 +360,7 @@ async function submitHop() {
   S.score += gained;
   S.played.add(res.word);
   S.wordCount += 1;
+  S.zonesPlayed.push(res.zone === "strong" ? "strong" : "weak");
   maybeEscalate();
   S.current = res.word;
   S.lastHopTs = performance.now();
@@ -398,13 +401,19 @@ function endRun() {
   const best = Math.max(prev, S.score);
   localStorage.setItem(key, String(best));
 
+  const letters = Letters.forbiddenCount(S.wordCount, LETTER_EVERY);
   el.final.textContent = Math.round(S.score);
-  el.best.textContent = "meilleur : " + Math.round(best) +
-    (S.score >= best && S.score > prev ? "  (nouveau record !)" : "");
-  const b = S.bestBridge;
-  el.recap.innerHTML =
-    `${S.hops} hops forts · ${S.weakHops} faibles` +
-    (b ? ` · meilleur pont : <b>${b.word}</b> (+${Math.round(b.points)})` : "");
+  el.recap.innerHTML = `${S.wordCount} mots · survécu à <b>${letters}</b> lettre${letters>1?'s':''} interdite${letters>1?'s':''}`;
+  const grid = S.zonesPlayed.map(z => z === "strong" ? "🟩" : "🟨");
+  const rows = [];
+  for (let i = 0; i < grid.length; i += 10) rows.push(grid.slice(i, i + 10).join(""));
+  const share = `Vocabulium — ${S.wordCount} mots, ${letters} lettres interdites 🔥\n`
+    + rows.join("\n") + `\nvocabulium.up.railway.app`;
+  el.sharegrid.textContent = rows.join("\n");
+  el.share.onclick = () => {
+    if (navigator.share) navigator.share({ text: share }).catch(() => {});
+    else navigator.clipboard.writeText(share).then(() => (el.share.textContent = "Copié !"));
+  };
   el.end.classList.add("show");
 }
 
