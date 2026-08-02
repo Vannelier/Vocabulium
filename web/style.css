@@ -36,8 +36,6 @@ body {
 .stat .val { font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums;
   line-height: 1.1; }
 #score .val { color: var(--bank); }
-#pending .val { color: var(--push); }
-#pending.empty .val { color: var(--muted); }
 .mult { display: inline-block; font-size: 21px; font-weight: 900; margin-left: 8px;
   color: var(--muted); transform: scale(var(--s, 1)); transform-origin: left center;
   transition: color .15s; will-change: transform; }
@@ -187,12 +185,6 @@ body {
   border-radius: 12px; outline: none; transition: border-color .15s, box-shadow .15s; }
 #guess:focus { border-color: var(--hot); box-shadow: 0 0 0 3px rgba(255,90,60,.15); }
 #guess.shake { animation: shake .3s; }
-#bank { background: var(--bank); color: #04120f; border: none; font-weight: 900;
-  font-size: 15px; letter-spacing: .05em; padding: 0 22px; border-radius: 12px;
-  cursor: pointer; transition: transform .1s, filter .15s; }
-#bank:hover { filter: brightness(1.1); }
-#bank:active { transform: scale(.96); }
-#bank:disabled { opacity: .35; cursor: default; }
 
 .hint { text-align: center; color: var(--muted); font-size: 12px; margin-top: 14px; }
 .hint kbd { background: var(--bg2); border: 1px solid var(--line); border-radius: 4px;
@@ -204,7 +196,6 @@ body {
 .toast .big { font-size: 46px; font-weight: 900; }
 .toast .sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
 .toast.pop { animation: pop .7s ease-out forwards; }
-.toast.bank .big { color: var(--bank); }
 .toast.weakt .big { color: var(--warm); }
 .toast.rare .big { color: var(--warm); text-shadow: 0 0 24px var(--warm), 0 0 44px var(--hot); }
 .toast .sub.rare { color: var(--hot); font-weight: 900; letter-spacing: .12em; margin-top: 0; }

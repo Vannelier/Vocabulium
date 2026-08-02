@@ -18,7 +18,7 @@ const el = {
   vRar: $("v-rar"), vSpeed: $("v-speed"),
   portal: $("portal"), pprox: $("pprox"), pverdict: $("pverdict"), pmark: $("pmark"),
   pzRej: $("pz-rej"), pzFar: $("pz-far"), pzSweet: $("pz-sweet"), pzSyno: $("pz-syno"),
-  end: $("end"), final: $("final"), best: $("best"), recap: $("recap"),
+  end: $("end"), final: $("final"), recap: $("recap"),
   sharegrid: $("sharegrid"), share: $("share"),
   again: $("again"), start: $("start"), play: $("play"),
   forbidLetters: $("forbidLetters"), forbidNext: $("forbidNext"),
