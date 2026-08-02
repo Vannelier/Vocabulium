@@ -3,7 +3,6 @@
 const $ = (id) => document.getElementById(id);
 const el = {
   score: $("score").querySelector(".val"),
-  pending: $("pending"),
   pnum: $("pnum"),
   mult: $("mult"),
   jeop: $("jeop"),
@@ -11,39 +10,52 @@ const el = {
   trail: $("trail"),
   current: $("current"),
   guess: $("guess"),
-  bank: $("bank"),
   toast: $("toast"),
+  beat: $("beat"),
   detail: $("detail"),
   dword: $("dword"), dpts: $("dpts"),
   bRar: $("b-rar"), bSpeed: $("b-speed"),
   vRar: $("v-rar"), vSpeed: $("v-speed"),
   portal: $("portal"), pprox: $("pprox"), pverdict: $("pverdict"), pmark: $("pmark"),
   pzRej: $("pz-rej"), pzFar: $("pz-far"), pzSweet: $("pz-sweet"), pzSyno: $("pz-syno"),
-  end: $("end"), final: $("final"), best: $("best"), recap: $("recap"),
+  end: $("end"), final: $("final"), recap: $("recap"),
+  sharegrid: $("sharegrid"), share: $("share"),
   again: $("again"), start: $("start"), play: $("play"),
+  forbidLetters: $("forbidLetters"), forbidNext: $("forbidNext"),
 };
 
 let cfg = {
   tau: 0.30, tau_grace: 0.22, combo_step: 0.18, combo_floor: 0.4, mult_max: 4.0,
-  gauge_seconds: 15, weak_refill: 0.45, keep_pending_on_timeout: false,
+  gauge_seconds: 15, weak_refill: 0.45,
 };
 let seedWord = null;
 
 const S = {
-  current: null, played: new Set(), score: 0, pending: 0, mult: 1,
+  mode: "random",
+  current: null, played: new Set(), score: 0, mult: 1,
   lastHopTs: 0, started: false, running: false,
   gauge: 1, lastFrame: 0, hops: 0, weakHops: 0, misses: 0, bestBridge: null,
+  forbiddenOrder: [], wordCount: 0, zonesPlayed: [],
 };
 
 const MISS_LIMIT = 2;   // 1er raté : le mult tressaille · 2e raté consécutif : reset ×1
 const RARE_THRESHOLD = 0.6;   // au-delà : juice "rare" (étincelles + glow)
 const RARE_HI = 0.85;         // au-delà : juice renforcé "très rare"
+const LETTER_EVERY = 10;
 
 // --- init -------------------------------------------------------------------
 async function fetchSeed() {
-  const r = await fetch("/api/seed?mode=random").then((x) => x.json());
+  const r = await fetch(`/api/seed?mode=${S.mode === "daily" ? "daily" : "random"}`).then((x) => x.json());
   seedWord = r.word;
   cfg = { ...cfg, ...r.config };
+
+  // mode "daily" -> ordre déterministe depuis la date ; sinon aléatoire local.
+  const mode = S.mode;
+  const dateKey = (new Date()).toISOString().slice(0, 10);
+  const rand = mode === "daily"
+    ? Letters.rng(Letters.seedFromString(dateKey))
+    : Math.random;
+  S.forbiddenOrder = Letters.drawOrder(rand);
 }
 
 // Prépare une partie (mot, état) MAIS ne lance rien : input désactivé, chrono à
@@ -52,13 +64,14 @@ async function prepareRun() {
   await fetchSeed();
   Object.assign(S, {
     current: seedWord, played: new Set([seedWord]),
-    score: 0, pending: 0, mult: 1, lastHopTs: 0,
+    score: 0, mult: 1, lastHopTs: 0,
     started: false, running: false, gauge: 1, lastFrame: 0,
-    hops: 0, weakHops: 0, misses: 0, bestBridge: null,
+    hops: 0, weakHops: 0, misses: 0, bestBridge: null, wordCount: 0,
+    zonesPlayed: [],
   });
   el.trail.innerHTML = "";
   el.current.textContent = seedWord;
-  el.guess.value = ""; el.guess.disabled = true; el.bank.disabled = true;
+  el.guess.value = ""; el.guess.disabled = true;
   el.end.classList.remove("show");
   el.gauge.style.transform = "scaleX(1)";
   el.detail.className = "detail";
@@ -68,6 +81,7 @@ async function prepareRun() {
   setBars(0, 0, true);
   renderHud();
   renderMult(null);
+  renderForbidden();
 }
 
 // Lance la partie : le chrono démarre ICI (au clic), pas au premier mot. Le
@@ -85,10 +99,7 @@ function startRun() {
 
 // --- rendering --------------------------------------------------------------
 function renderHud() {
-  el.score.textContent = Math.round(S.score);
-  el.pnum.textContent = Math.round(S.pending);
-  el.pending.classList.toggle("empty", S.pending === 0);
-  el.bank.disabled = S.pending === 0;
+  el.pnum.textContent = Math.round(S.score);
 }
 
 // Le multiplicateur, avec juice. evt: "grow" (montée), "warn" (1er raté, tressaille),
@@ -256,6 +267,39 @@ function shake() {
   setTimeout(() => el.guess.classList.remove("shake"), 300);
 }
 
+function activeForbidden() {
+  return Letters.activeForbidden(S.forbiddenOrder, S.wordCount, LETTER_EVERY);
+}
+
+function renderForbidden() {
+  const active = activeForbidden();
+  const box = el.forbidLetters;
+  box.innerHTML = active.length
+    ? active.map(L => `<span class="fl" data-l="${L}">${L}</span>`).join("")
+    : `<span class="forbid-empty">aucune — profite !</span>`;
+  const into = LETTER_EVERY - (S.wordCount % LETTER_EVERY);
+  el.forbidNext.textContent = "prochaine dans " + into;
+}
+
+function flashForbidden(letters) {
+  for (const L of letters) {
+    const el2 = el.forbidLetters.querySelector(`.fl[data-l="${L}"]`);
+    if (el2) { el2.classList.remove("blink"); void el2.offsetWidth; el2.classList.add("blink"); }
+  }
+}
+function newForbiddenBeat(letter) {
+  el.beat.innerHTML = `<div class="b1">⛔ lettre interdite</div><div class="b2">${letter}</div>`;
+  el.beat.classList.remove("play"); void el.beat.offsetWidth; el.beat.classList.add("play");
+}
+
+// Appelé après chaque mot accepté : détecte le franchissement d'un palier de 10.
+function maybeEscalate() {
+  const before = Letters.forbiddenCount(S.wordCount - 1, LETTER_EVERY);
+  const after = Letters.forbiddenCount(S.wordCount, LETTER_EVERY);
+  if (after > before) newForbiddenBeat(activeForbidden()[after - 1]);
+  renderForbidden();
+}
+
 // --- gauge loop -------------------------------------------------------------
 function tick(now) {
   if (!S.running) return;
@@ -270,8 +314,18 @@ function tick(now) {
 // --- game actions -----------------------------------------------------------
 async function submitHop() {
   const raw = el.guess.value.trim();
-  if (!raw) return bank();
+  if (!raw) { el.guess.focus(); return; }
   if (!S.running) return;
+
+  const active = activeForbidden();
+  const offending = Letters.offendingLetters(raw.toLowerCase(), active);
+  if (offending.length) {
+    // refusé : ni raté, ni casse de combo. Juste illégal -> feedback + retry.
+    flashForbidden(offending);
+    shake();
+    el.guess.value = "";
+    return;                             // la jauge continue de tourner (le coût = temps)
+  }
 
   const t = (performance.now() - S.lastHopTs) / 1000;
   let res;
@@ -304,8 +358,11 @@ async function submitHop() {
   // hop accepté (strong ou weak) : réarme le filet
   clearMisses();
   const gained = res.hop_points * S.mult;
-  S.pending += gained;
+  S.score += gained;
   S.played.add(res.word);
+  S.wordCount += 1;
+  S.zonesPlayed.push(res.zone === "strong" ? "strong" : "weak");
+  maybeEscalate();
   S.current = res.word;
   S.lastHopTs = performance.now();
   el.current.textContent = res.word;
@@ -335,49 +392,47 @@ async function submitHop() {
   renderHud();
 }
 
-function bank() {
-  if (S.pending <= 0) return;
-  const amt = S.pending;
-  S.score += amt; S.pending = 0; S.mult = 1;
-  toastScore(amt, "bank");
-  renderHud();
-  renderMult(null);            // reset silencieux (encaisser = choix, pas une faute)
-  el.guess.focus();
-}
-
 function endRun() {
   S.running = false;
-  const lost = S.pending;
-  if (cfg.keep_pending_on_timeout) S.score += S.pending;   // sinon : pending perdu
-  S.pending = 0;
   renderHud();
-  el.guess.disabled = true; el.bank.disabled = true;
+  el.guess.disabled = true;
 
   const key = "Vocabulium_best";
   const prev = Number(localStorage.getItem(key) || 0);
   const best = Math.max(prev, S.score);
   localStorage.setItem(key, String(best));
 
+  const letters = Letters.forbiddenCount(S.wordCount, LETTER_EVERY);
   el.final.textContent = Math.round(S.score);
-  el.best.textContent = "meilleur : " + Math.round(best) +
-    (S.score >= best && S.score > prev ? "  (nouveau record !)" : "");
-  const b = S.bestBridge;
-  el.recap.innerHTML =
-    `${S.hops} hops forts · ${S.weakHops} faibles` +
-    (b ? ` · meilleur pont : <b>${b.word}</b> (+${Math.round(b.points)})` : "") +
-    (!cfg.keep_pending_on_timeout && lost > 0
-      ? `<br><span style="color:var(--bail)">pending perdu à sec : ${Math.round(lost)}</span>`
-      : "");
+  el.recap.innerHTML = `${S.wordCount} mots · survécu à <b>${letters}</b> lettre${letters>1?'s':''} interdite${letters>1?'s':''}`;
+  const grid = S.zonesPlayed.map(z => z === "strong" ? "🟩" : "🟨");
+  const rows = [];
+  for (let i = 0; i < grid.length; i += 10) rows.push(grid.slice(i, i + 10).join(""));
+  const share = `Vocabulium — ${S.wordCount} mots, ${letters} lettres interdites 🔥\n`
+    + rows.join("\n") + `\nvocabulium.up.railway.app`;
+  el.sharegrid.textContent = rows.join("\n");
+  el.share.onclick = () => {
+    if (navigator.share) navigator.share({ text: share }).catch(() => {});
+    else navigator.clipboard.writeText(share).then(() => (el.share.textContent = "Copié !"));
+  };
   el.end.classList.add("show");
 }
 
 // --- events -----------------------------------------------------------------
 el.guess.addEventListener("keydown", (e) => {
   if (e.key === "Enter") { e.preventDefault(); submitHop(); }
-  else if (e.key === "Tab") { e.preventDefault(); bank(); }
 });
-el.bank.addEventListener("click", bank);
-el.play.addEventListener("click", startRun);                       // Jouer : lance + chrono
+el.guess.addEventListener("input", () => {
+  const bad = Letters.offendingLetters(el.guess.value.toLowerCase(), activeForbidden());
+  el.guess.classList.toggle("hasforbidden", bad.length > 0);
+});
+el.play.addEventListener("click", () => startWith("random"));
+document.getElementById("playDaily").addEventListener("click", () => startWith("daily"));
+async function startWith(mode) {
+  S.mode = mode;
+  await prepareRun();     // re-fetch le seed + re-tire les lettres selon le mode choisi
+  startRun();
+}
 el.again.addEventListener("click", async () => {                   // Rejouer : nouvelle partie + chrono immédiat
   await prepareRun();
   startRun();

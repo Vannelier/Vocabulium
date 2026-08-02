@@ -36,8 +36,6 @@ body {
 .stat .val { font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums;
   line-height: 1.1; }
 #score .val { color: var(--bank); }
-#pending .val { color: var(--push); }
-#pending.empty .val { color: var(--muted); }
 .mult { display: inline-block; font-size: 21px; font-weight: 900; margin-left: 8px;
   color: var(--muted); transform: scale(var(--s, 1)); transform-origin: left center;
   transition: color .15s; will-change: transform; }
@@ -96,6 +94,27 @@ body {
   letter-spacing: -.02em; line-height: 1;
   background: linear-gradient(180deg, #fff, #b9c0d6);
   -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* --- Bande des lettres interdites ------------------------------------------ */
+.forbid { margin-bottom: 14px; }
+.forbid-head { font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--muted); display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 6px; }
+.forbid-next { font-weight: 800; color: var(--warm); letter-spacing: .02em; }
+.forbid-letters { display: flex; flex-wrap: wrap; gap: 8px; min-height: 34px; }
+.forbid-letters .fl { display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 34px; border-radius: 8px; background: rgba(255,59,87,.14);
+  border: 1.5px solid var(--bail); color: var(--bail); font-weight: 900; font-size: 19px;
+  text-transform: uppercase; position: relative; }
+.forbid-letters .fl::after { content: ""; position: absolute; left: 4px; right: 4px;
+  height: 2.5px; background: var(--bail); transform: rotate(-12deg); }
+.forbid-empty { color: var(--muted); font-size: 12px; opacity: .7; align-self: center; }
+.forbid-letters .fl.blink { animation: flblink .5s ease-out 3; }
+@keyframes flblink {
+  0%,100% { background: rgba(255,59,87,.14); transform: scale(1); }
+  50% { background: var(--bail); color: #fff; transform: scale(1.18);
+        box-shadow: 0 0 14px var(--bail); }
+}
 
 /* --- Juice "mot rare" : glow doré + gerbe d'étincelles -------------------- */
 .current .word.rareglow { animation: rareGlow .85s ease-out; }
@@ -166,12 +185,6 @@ body {
   border-radius: 12px; outline: none; transition: border-color .15s, box-shadow .15s; }
 #guess:focus { border-color: var(--hot); box-shadow: 0 0 0 3px rgba(255,90,60,.15); }
 #guess.shake { animation: shake .3s; }
-#bank { background: var(--bank); color: #04120f; border: none; font-weight: 900;
-  font-size: 15px; letter-spacing: .05em; padding: 0 22px; border-radius: 12px;
-  cursor: pointer; transition: transform .1s, filter .15s; }
-#bank:hover { filter: brightness(1.1); }
-#bank:active { transform: scale(.96); }
-#bank:disabled { opacity: .35; cursor: default; }
 
 .hint { text-align: center; color: var(--muted); font-size: 12px; margin-top: 14px; }
 .hint kbd { background: var(--bg2); border: 1px solid var(--line); border-radius: 4px;
@@ -183,7 +196,6 @@ body {
 .toast .big { font-size: 46px; font-weight: 900; }
 .toast .sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
 .toast.pop { animation: pop .7s ease-out forwards; }
-.toast.bank .big { color: var(--bank); }
 .toast.weakt .big { color: var(--warm); }
 .toast.rare .big { color: var(--warm); text-shadow: 0 0 24px var(--warm), 0 0 44px var(--hot); }
 .toast .sub.rare { color: var(--hot); font-weight: 900; letter-spacing: .12em; margin-top: 0; }
@@ -222,3 +234,41 @@ body {
   text-transform: none; color: transparent; margin-bottom: 4px;
   background: linear-gradient(180deg, #fff, #b9c0d6);
   -webkit-background-clip: text; background-clip: text; }
+#guess.hasforbidden { border-color: var(--bail);
+  box-shadow: 0 0 0 3px rgba(255,59,87,.20); color: var(--bail); }
+.beat { position: fixed; left: 50%; top: 40%; transform: translateX(-50%);
+  pointer-events: none; text-align: center; font-weight: 900; color: var(--bail);
+  text-shadow: 0 0 24px var(--bail); z-index: 30; opacity: 0; }
+.beat .b1 { font-size: 15px; letter-spacing: .2em; }
+.beat .b2 { font-size: 64px; text-transform: uppercase; }
+.beat.play { animation: beatpop 1s ease-out forwards; }
+@keyframes beatpop {
+  0% { opacity: 0; transform: translateX(-50%) scale(.6); }
+  15% { opacity: 1; transform: translateX(-50%) scale(1.12); }
+  70% { opacity: 1; transform: translateX(-50%) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) scale(1); }
+}
+
+.endbtns { display: flex; gap: 12px; margin-top: 16px; }
+.end .sharegrid { font-size: 20px; line-height: 1.15; margin-top: 12px; letter-spacing: 2px; }
+#share { background: var(--cool); color: #04120f; border: none; font-weight: 900;
+  font-size: 15px; padding: 12px 24px; border-radius: 12px; cursor: pointer; }
+.adslot { margin-top: 18px; min-height: 90px; width: 100%; max-width: 336px;
+  display: flex; align-items: center; justify-content: center; }
+
+/* --- Mobile-first : tout le nécessaire au-dessus du clavier virtuel -------- */
+@media (max-width: 560px) {
+  #app { padding: 12px; }
+  .current .word { font-size: clamp(34px, 12vw, 56px); }
+  .current { margin: 4px 0 14px; }
+  .forbid-letters .fl { width: 34px; height: 40px; font-size: 21px; }  /* cibles tactiles >=40px */
+  #guess { font-size: 18px; padding: 14px 14px; }
+  .hud .val { font-size: 26px; }
+  .mult { font-size: 18px; }
+  .detail, .portal, .forbid { margin-bottom: 10px; }
+  .end .b2, .beat .b2 { font-size: 44px; }
+  .end .final { font-size: 60px; }
+  .adslot-end, .adslot-start { min-height: 100px; }
+  .endbtns { flex-wrap: wrap; }
+  .endbtns button { flex: 1; min-width: 130px; }
+}
