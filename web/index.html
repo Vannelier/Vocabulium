@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Vocabulium</title>
-  <link rel="stylesheet" href="/style.css?v=21">
+  <link rel="stylesheet" href="/style.css?v=22">
 </head>
 <body>
   <div id="app">
@@ -62,9 +62,12 @@
 
   <div class="end start" id="start">
     <h1>Vocabulium</h1>
-    <div class="recap">enchaîne des mots proches, vite et malins · encaisse avant
-      que la jauge se vide<br><b>le chrono démarre dès que tu cliques</b></div>
-    <button id="play">Jouer</button>
+    <div class="recap">enchaîne des mots proches · évite les lettres barrées (elles arrivent au fil des mots) · va le plus loin possible<br><b>le chrono démarre dès que tu cliques</b></div>
+    <div class="endbtns">
+      <button id="playDaily">Défi du jour</button>
+      <button id="play">Sans fin</button>
+    </div>
+    <div class="adslot adslot-start" id="adStart"><!-- AdSense (départ) : coller ici le <ins class="adsbygoogle">. JAMAIS près de la saisie/boutons de jeu. --></div>
   </div>
 
   <div class="end" id="end">
@@ -79,7 +82,7 @@
     <div class="adslot adslot-end" id="adEnd"><!-- AdSense (fin) : coller ici le <ins class="adsbygoogle">. JAMAIS près de la saisie/boutons de jeu. --></div>
   </div>
 
-  <script src="/letters.js?v=21"></script>
-  <script src="/app.js?v=21"></script>
+  <script src="/letters.js?v=22"></script>
+  <script src="/app.js?v=22"></script>
 </body>
 </html>

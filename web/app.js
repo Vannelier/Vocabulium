@@ -31,6 +31,7 @@ let cfg = {
 let seedWord = null;
 
 const S = {
+  mode: "random",
   current: null, played: new Set(), score: 0, mult: 1,
   lastHopTs: 0, started: false, running: false,
   gauge: 1, lastFrame: 0, hops: 0, weakHops: 0, misses: 0, bestBridge: null,
@@ -44,12 +45,12 @@ const LETTER_EVERY = 10;
 
 // --- init -------------------------------------------------------------------
 async function fetchSeed() {
-  const r = await fetch("/api/seed?mode=random").then((x) => x.json());
+  const r = await fetch(`/api/seed?mode=${S.mode === "daily" ? "daily" : "random"}`).then((x) => x.json());
   seedWord = r.word;
   cfg = { ...cfg, ...r.config };
 
   // mode "daily" -> ordre déterministe depuis la date ; sinon aléatoire local.
-  const mode = new URLSearchParams(location.search).get("mode") || "random";
+  const mode = S.mode;
   const dateKey = (new Date()).toISOString().slice(0, 10);
   const rand = mode === "daily"
     ? Letters.rng(Letters.seedFromString(dateKey))
@@ -425,7 +426,13 @@ el.guess.addEventListener("input", () => {
   const bad = Letters.offendingLetters(el.guess.value.toLowerCase(), activeForbidden());
   el.guess.classList.toggle("hasforbidden", bad.length > 0);
 });
-el.play.addEventListener("click", startRun);                       // Jouer : lance + chrono
+el.play.addEventListener("click", () => startWith("random"));
+document.getElementById("playDaily").addEventListener("click", () => startWith("daily"));
+async function startWith(mode) {
+  S.mode = mode;
+  await prepareRun();     // re-fetch le seed + re-tire les lettres selon le mode choisi
+  startRun();
+}
 el.again.addEventListener("click", async () => {                   // Rejouer : nouvelle partie + chrono immédiat
   await prepareRun();
   startRun();
