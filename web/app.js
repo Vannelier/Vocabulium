@@ -305,10 +305,8 @@ function activeForbidden() {
 
 function renderForbidden() {
   const active = activeForbidden();
-  const box = el.forbidLetters;
-  box.innerHTML = active.length
-    ? active.map(L => `<span class="fl" data-l="${L}">${L}</span>`).join("")
-    : `<span class="forbid-empty">aucune — profite !</span>`;
+  el.forbidLetters.innerHTML =
+    active.map(L => `<span class="fl" data-l="${L}">${L}</span>`).join("");
   const into = LETTER_EVERY - (S.wordCount % LETTER_EVERY);
   el.forbidNext.textContent = "prochaine dans " + into;
 }

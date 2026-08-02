@@ -100,11 +100,12 @@ body.kb-open { align-items: flex-start; overflow-y: auto; }
   -webkit-background-clip: text; background-clip: text; color: transparent; }
 
 /* --- Bande des lettres interdites ------------------------------------------ */
-.forbid { margin-bottom: 14px; }
-.forbid-head { font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
-  color: var(--muted); display: flex; justify-content: space-between; align-items: baseline;
-  margin-bottom: 6px; }
-.forbid-next { font-weight: 800; color: var(--warm); letter-spacing: .02em; }
+.forbid { margin-bottom: 14px; border: 1px solid var(--line); border-radius: 12px;
+  padding: 12px 14px; background: var(--bg2); }
+.forbid-head { font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--muted); font-weight: 700; margin-bottom: 10px; }
+.forbid-next { font-size: 11px; letter-spacing: .04em; text-transform: uppercase;
+  font-weight: 800; color: var(--warm); margin-top: 10px; }
 .forbid-letters { display: flex; flex-wrap: wrap; gap: 8px; min-height: 34px; }
 /* Pas de barre sur la lettre (nuisait à la lisibilité) : le fond + la bordure +
    la couleur rouge suffisent à la lire comme « interdite ». */
@@ -112,7 +113,6 @@ body.kb-open { align-items: flex-start; overflow-y: auto; }
   width: 30px; height: 34px; border-radius: 8px; background: rgba(255,59,87,.14);
   border: 1.5px solid var(--bail); color: var(--bail); font-weight: 900; font-size: 19px;
   text-transform: uppercase; }
-.forbid-empty { color: var(--muted); font-size: 12px; opacity: .7; align-self: center; }
 .forbid-letters .fl.blink { animation: flblink .5s ease-out 3; }
 @keyframes flblink {
   0%,100% { background: rgba(255,59,87,.14); transform: scale(1); }
