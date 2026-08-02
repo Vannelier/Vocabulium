@@ -13,6 +13,7 @@ const el = {
   guess: $("guess"),
   bank: $("bank"),
   toast: $("toast"),
+  beat: $("beat"),
   detail: $("detail"),
   dword: $("dword"), dpts: $("dpts"),
   bRar: $("b-rar"), bSpeed: $("b-speed"),
@@ -288,7 +289,10 @@ function flashForbidden(letters) {
     if (el2) { el2.classList.remove("blink"); void el2.offsetWidth; el2.classList.add("blink"); }
   }
 }
-function newForbiddenBeat(letter) { /* stub, rempli en Task 6 */ }
+function newForbiddenBeat(letter) {
+  el.beat.innerHTML = `<div class="b1">⛔ lettre interdite</div><div class="b2">${letter}</div>`;
+  el.beat.classList.remove("play"); void el.beat.offsetWidth; el.beat.classList.add("play");
+}
 
 // Appelé après chaque mot accepté : détecte le franchissement d'un palier de 10.
 function maybeEscalate() {

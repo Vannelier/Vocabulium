@@ -245,3 +245,15 @@ body {
   -webkit-background-clip: text; background-clip: text; }
 #guess.hasforbidden { border-color: var(--bail);
   box-shadow: 0 0 0 3px rgba(255,59,87,.20); color: var(--bail); }
+.beat { position: fixed; left: 50%; top: 40%; transform: translateX(-50%);
+  pointer-events: none; text-align: center; font-weight: 900; color: var(--bail);
+  text-shadow: 0 0 24px var(--bail); z-index: 30; opacity: 0; }
+.beat .b1 { font-size: 15px; letter-spacing: .2em; }
+.beat .b2 { font-size: 64px; text-transform: uppercase; }
+.beat.play { animation: beatpop 1s ease-out forwards; }
+@keyframes beatpop {
+  0% { opacity: 0; transform: translateX(-50%) scale(.6); }
+  15% { opacity: 1; transform: translateX(-50%) scale(1.12); }
+  70% { opacity: 1; transform: translateX(-50%) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) scale(1); }
+}
