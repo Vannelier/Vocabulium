@@ -282,7 +282,12 @@ function renderForbidden() {
   el.forbidNext.textContent = "prochaine dans " + into;
 }
 
-function flashForbidden(letters) { /* stub, rempli en Task 5 */ }
+function flashForbidden(letters) {
+  for (const L of letters) {
+    const el2 = el.forbidLetters.querySelector(`.fl[data-l="${L}"]`);
+    if (el2) { el2.classList.remove("blink"); void el2.offsetWidth; el2.classList.add("blink"); }
+  }
+}
 function newForbiddenBeat(letter) { /* stub, rempli en Task 6 */ }
 
 // Appelé après chaque mot accepté : détecte le franchissement d'un palier de 10.
@@ -424,6 +429,10 @@ function endRun() {
 el.guess.addEventListener("keydown", (e) => {
   if (e.key === "Enter") { e.preventDefault(); submitHop(); }
   else if (e.key === "Tab") { e.preventDefault(); bank(); }
+});
+el.guess.addEventListener("input", () => {
+  const bad = Letters.offendingLetters(el.guess.value.toLowerCase(), activeForbidden());
+  el.guess.classList.toggle("hasforbidden", bad.length > 0);
 });
 el.bank.addEventListener("click", bank);
 el.play.addEventListener("click", startRun);                       // Jouer : lance + chrono

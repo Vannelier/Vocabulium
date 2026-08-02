@@ -243,3 +243,5 @@ body {
   text-transform: none; color: transparent; margin-bottom: 4px;
   background: linear-gradient(180deg, #fff, #b9c0d6);
   -webkit-background-clip: text; background-clip: text; }
+#guess.hasforbidden { border-color: var(--bail);
+  box-shadow: 0 0 0 3px rgba(255,59,87,.20); color: var(--bail); }
