@@ -33,17 +33,27 @@ const S = {
   current: null, played: new Set(), score: 0, pending: 0, mult: 1,
   lastHopTs: 0, started: false, running: false,
   gauge: 1, lastFrame: 0, hops: 0, weakHops: 0, misses: 0, bestBridge: null,
+  forbiddenOrder: [], wordCount: 0,
 };
 
 const MISS_LIMIT = 2;   // 1er raté : le mult tressaille · 2e raté consécutif : reset ×1
 const RARE_THRESHOLD = 0.6;   // au-delà : juice "rare" (étincelles + glow)
 const RARE_HI = 0.85;         // au-delà : juice renforcé "très rare"
+const LETTER_EVERY = 10;
 
 // --- init -------------------------------------------------------------------
 async function fetchSeed() {
   const r = await fetch("/api/seed?mode=random").then((x) => x.json());
   seedWord = r.word;
   cfg = { ...cfg, ...r.config };
+
+  // mode "daily" -> ordre déterministe depuis la date ; sinon aléatoire local.
+  const mode = new URLSearchParams(location.search).get("mode") || "random";
+  const dateKey = (new Date()).toISOString().slice(0, 10);
+  const rand = mode === "daily"
+    ? Letters.rng(Letters.seedFromString(dateKey))
+    : Math.random;
+  S.forbiddenOrder = Letters.drawOrder(rand);
 }
 
 // Prépare une partie (mot, état) MAIS ne lance rien : input désactivé, chrono à
@@ -54,7 +64,7 @@ async function prepareRun() {
     current: seedWord, played: new Set([seedWord]),
     score: 0, pending: 0, mult: 1, lastHopTs: 0,
     started: false, running: false, gauge: 1, lastFrame: 0,
-    hops: 0, weakHops: 0, misses: 0, bestBridge: null,
+    hops: 0, weakHops: 0, misses: 0, bestBridge: null, wordCount: 0,
   });
   el.trail.innerHTML = "";
   el.current.textContent = seedWord;
@@ -254,6 +264,10 @@ function rareJuice(rarity) {
 function shake() {
   el.guess.classList.add("shake");
   setTimeout(() => el.guess.classList.remove("shake"), 300);
+}
+
+function activeForbidden() {
+  return Letters.activeForbidden(S.forbiddenOrder, S.wordCount, LETTER_EVERY);
 }
 
 // --- gauge loop -------------------------------------------------------------
