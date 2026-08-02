@@ -19,7 +19,7 @@ from pydantic import BaseModel
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import constants as C
 from app.db import Vocab
-from app.scoring import score_hop, same_root
+from app.scoring import score_hop, same_root, same_lemma
 from app.seed import daily_seed, random_seed
 
 app = FastAPI(title="Vocabulium")
@@ -66,6 +66,8 @@ def post_hop(req: HopRequest):
         return {"valid": False, "reason": "unknown_word", "input": req.next}
     if nxt == prev:
         return {"valid": False, "reason": "same_word", "word": nxt}
+    if same_lemma(prev, nxt):          # même mot au singulier/pluriel : pont interdit
+        return {"valid": False, "reason": "same_lemma", "word": nxt}
 
     prox = db.prox(prev, nxt)
     result = score_hop(prox, db.zipf(nxt), req.t, root=same_root(prev, nxt))

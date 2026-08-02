@@ -45,6 +45,29 @@ def same_root(a: str, b: str) -> bool:
             and n >= C.ROOT_FRAC * m)
 
 
+def _number_stem(w: str) -> str:
+    """Radical 'sans marque de pluriel' (heuristique FR), pour comparer un mot à
+    son singulier/pluriel. On ne cherche pas un vrai lemmatiseur : juste replier
+    les marques de nombre les plus courantes."""
+    if len(w) <= 3:
+        return w
+    for suf, rep in (("eaux", "eau"), ("eux", "eu"), ("aux", "al"), ("oux", "ou")):
+        if w.endswith(suf):
+            return w[: -len(suf)] + rep
+    if w.endswith(("s", "x")):        # chats->chat, choix->choi, prix->pri…
+        return w[:-1]
+    return w
+
+
+def same_lemma(a: str, b: str) -> bool:
+    """True si a et b sont le même mot au singulier/pluriel (chat/chats,
+    journal/journaux, jeu/jeux). Sert à INTERDIRE ce pont (trop paresseux),
+    au-delà du simple mot identique."""
+    if a == b:
+        return True
+    return _number_stem(a) == _number_stem(b)
+
+
 def resemblance(prox: float, root: bool) -> float:
     """[0,1] : à quel point G est un ÉCHO du mot précédent. 0 = pont distinct,
     ->1 = quasi-identique. Monte avec la proximité (au-delà du sweet spot) et est

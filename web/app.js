@@ -367,10 +367,18 @@ async function submitHop() {
   } catch (e) { return; }
   if (!S.running) return;
 
-  if (!res.valid) {                          // mot hors vocab (typo) / identique
-    el.dword.innerHTML = `${res.input || raw} <small>mot inconnu</small>`;
+  if (!res.valid) {
+    // Refus "doux" (même mot, ou son singulier/pluriel) : c'est une contrainte,
+    // pas une faute -> ni raté ni casse de combo. Un mot inconnu (typo) reste un raté.
+    const soft = res.reason === "same_word" || res.reason === "same_lemma";
+    const msg = res.reason === "same_lemma" ? "même mot (sing./plur.)"
+              : res.reason === "same_word" ? "même mot"
+              : "mot inconnu";
+    el.dword.innerHTML = `${res.input || res.word || raw} <small>${msg}</small>`;
     el.dpts.textContent = ""; el.detail.className = "detail live reject";
-    renderGate(null); setBars(0, 0, true); registerMiss(); shake();
+    renderGate(null); setBars(0, 0, true);
+    if (!soft) registerMiss();
+    shake(); blinkUnchanged();
     el.guess.value = ""; return;
   }
   if (S.played.has(res.word)) {              // déjà joué : contrainte, pas une faute
