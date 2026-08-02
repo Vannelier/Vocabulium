@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Vocabulium</title>
-  <link rel="stylesheet" href="/style.css?v=19">
+  <link rel="stylesheet" href="/style.css?v=20">
 </head>
 <body>
   <div id="app">
     <div class="hud">
-      <div class="stat" id="score"><div class="label">Score</div><div class="val">0</div></div>
-      <div class="stat" id="pending"><div class="label">Pending</div>
-        <div class="val"><span id="pnum">0</span> <span class="mult" id="mult">×1.00</span><span class="jeop" id="jeop"></span></div></div>
+      <div class="stat" id="score"><div class="label">Score</div>
+        <div class="val"><span id="pnum">0</span>
+          <span class="mult" id="mult">×1.00</span><span class="jeop" id="jeop"></span></div></div>
     </div>
     <div class="timer"><i id="timerbar"></i></div>
 
@@ -50,13 +50,10 @@
     <div class="inrow">
       <input id="guess" autocomplete="off" autocapitalize="off" spellcheck="false"
              placeholder="un mot proche…" disabled>
-      <button id="bank" disabled>ENCAISSER</button>
     </div>
     <div class="hint">
-      <kbd>Entrée</kbd> pose le mot · <kbd>Entrée</kbd> à vide ou <kbd>Tab</kbd>
-      encaisse · un mot trop loin est refusé sans pénalité · la jauge se vide
-      vite et se recharge à chaque bon mot — à sec avec du pending non encaissé,
-      tu le <b>perds</b>.
+      <kbd>Entrée</kbd> pose un mot proche · évite les lettres barrées · la jauge
+      se vide vite et se recharge à chaque bon mot — à sec, c'est fini.
     </div>
   </div>
 
@@ -78,7 +75,7 @@
     <button id="again">Rejouer</button>
   </div>
 
-  <script src="/letters.js?v=19"></script>
-  <script src="/app.js?v=19"></script>
+  <script src="/letters.js?v=20"></script>
+  <script src="/app.js?v=20"></script>
 </body>
 </html>

@@ -3,7 +3,6 @@
 const $ = (id) => document.getElementById(id);
 const el = {
   score: $("score").querySelector(".val"),
-  pending: $("pending"),
   pnum: $("pnum"),
   mult: $("mult"),
   jeop: $("jeop"),
@@ -11,7 +10,6 @@ const el = {
   trail: $("trail"),
   current: $("current"),
   guess: $("guess"),
-  bank: $("bank"),
   toast: $("toast"),
   beat: $("beat"),
   detail: $("detail"),
@@ -27,12 +25,12 @@ const el = {
 
 let cfg = {
   tau: 0.30, tau_grace: 0.22, combo_step: 0.18, combo_floor: 0.4, mult_max: 4.0,
-  gauge_seconds: 15, weak_refill: 0.45, keep_pending_on_timeout: false,
+  gauge_seconds: 15, weak_refill: 0.45,
 };
 let seedWord = null;
 
 const S = {
-  current: null, played: new Set(), score: 0, pending: 0, mult: 1,
+  current: null, played: new Set(), score: 0, mult: 1,
   lastHopTs: 0, started: false, running: false,
   gauge: 1, lastFrame: 0, hops: 0, weakHops: 0, misses: 0, bestBridge: null,
   forbiddenOrder: [], wordCount: 0,
@@ -64,13 +62,13 @@ async function prepareRun() {
   await fetchSeed();
   Object.assign(S, {
     current: seedWord, played: new Set([seedWord]),
-    score: 0, pending: 0, mult: 1, lastHopTs: 0,
+    score: 0, mult: 1, lastHopTs: 0,
     started: false, running: false, gauge: 1, lastFrame: 0,
     hops: 0, weakHops: 0, misses: 0, bestBridge: null, wordCount: 0,
   });
   el.trail.innerHTML = "";
   el.current.textContent = seedWord;
-  el.guess.value = ""; el.guess.disabled = true; el.bank.disabled = true;
+  el.guess.value = ""; el.guess.disabled = true;
   el.end.classList.remove("show");
   el.gauge.style.transform = "scaleX(1)";
   el.detail.className = "detail";
@@ -98,10 +96,7 @@ function startRun() {
 
 // --- rendering --------------------------------------------------------------
 function renderHud() {
-  el.score.textContent = Math.round(S.score);
-  el.pnum.textContent = Math.round(S.pending);
-  el.pending.classList.toggle("empty", S.pending === 0);
-  el.bank.disabled = S.pending === 0;
+  el.pnum.textContent = Math.round(S.score);
 }
 
 // Le multiplicateur, avec juice. evt: "grow" (montée), "warn" (1er raté, tressaille),
@@ -316,7 +311,7 @@ function tick(now) {
 // --- game actions -----------------------------------------------------------
 async function submitHop() {
   const raw = el.guess.value.trim();
-  if (!raw) return bank();
+  if (!raw) { el.guess.focus(); return; }
   if (!S.running) return;
 
   const active = activeForbidden();
@@ -360,7 +355,7 @@ async function submitHop() {
   // hop accepté (strong ou weak) : réarme le filet
   clearMisses();
   const gained = res.hop_points * S.mult;
-  S.pending += gained;
+  S.score += gained;
   S.played.add(res.word);
   S.wordCount += 1;
   maybeEscalate();
@@ -393,23 +388,10 @@ async function submitHop() {
   renderHud();
 }
 
-function bank() {
-  if (S.pending <= 0) return;
-  const amt = S.pending;
-  S.score += amt; S.pending = 0; S.mult = 1;
-  toastScore(amt, "bank");
-  renderHud();
-  renderMult(null);            // reset silencieux (encaisser = choix, pas une faute)
-  el.guess.focus();
-}
-
 function endRun() {
   S.running = false;
-  const lost = S.pending;
-  if (cfg.keep_pending_on_timeout) S.score += S.pending;   // sinon : pending perdu
-  S.pending = 0;
   renderHud();
-  el.guess.disabled = true; el.bank.disabled = true;
+  el.guess.disabled = true;
 
   const key = "Vocabulium_best";
   const prev = Number(localStorage.getItem(key) || 0);
@@ -422,23 +404,18 @@ function endRun() {
   const b = S.bestBridge;
   el.recap.innerHTML =
     `${S.hops} hops forts · ${S.weakHops} faibles` +
-    (b ? ` · meilleur pont : <b>${b.word}</b> (+${Math.round(b.points)})` : "") +
-    (!cfg.keep_pending_on_timeout && lost > 0
-      ? `<br><span style="color:var(--bail)">pending perdu à sec : ${Math.round(lost)}</span>`
-      : "");
+    (b ? ` · meilleur pont : <b>${b.word}</b> (+${Math.round(b.points)})` : "");
   el.end.classList.add("show");
 }
 
 // --- events -----------------------------------------------------------------
 el.guess.addEventListener("keydown", (e) => {
   if (e.key === "Enter") { e.preventDefault(); submitHop(); }
-  else if (e.key === "Tab") { e.preventDefault(); bank(); }
 });
 el.guess.addEventListener("input", () => {
   const bad = Letters.offendingLetters(el.guess.value.toLowerCase(), activeForbidden());
   el.guess.classList.toggle("hasforbidden", bad.length > 0);
 });
-el.bank.addEventListener("click", bank);
 el.play.addEventListener("click", startRun);                       // Jouer : lance + chrono
 el.again.addEventListener("click", async () => {                   // Rejouer : nouvelle partie + chrono immédiat
   await prepareRun();
