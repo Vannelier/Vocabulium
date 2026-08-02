@@ -21,6 +21,7 @@ const el = {
   pzRej: $("pz-rej"), pzFar: $("pz-far"), pzSweet: $("pz-sweet"), pzSyno: $("pz-syno"),
   end: $("end"), final: $("final"), best: $("best"), recap: $("recap"),
   again: $("again"), start: $("start"), play: $("play"),
+  forbidLetters: $("forbidLetters"), forbidNext: $("forbidNext"),
 };
 
 let cfg = {
@@ -78,6 +79,7 @@ async function prepareRun() {
   setBars(0, 0, true);
   renderHud();
   renderMult(null);
+  renderForbidden();
 }
 
 // Lance la partie : le chrono démarre ICI (au clic), pas au premier mot. Le
@@ -270,8 +272,26 @@ function activeForbidden() {
   return Letters.activeForbidden(S.forbiddenOrder, S.wordCount, LETTER_EVERY);
 }
 
+function renderForbidden() {
+  const active = activeForbidden();
+  const box = el.forbidLetters;
+  box.innerHTML = active.length
+    ? active.map(L => `<span class="fl" data-l="${L}">${L}</span>`).join("")
+    : `<span class="forbid-empty">aucune — profite !</span>`;
+  const into = LETTER_EVERY - (S.wordCount % LETTER_EVERY);
+  el.forbidNext.textContent = "prochaine dans " + into;
+}
+
 function flashForbidden(letters) { /* stub, rempli en Task 5 */ }
-function maybeEscalate() { /* stub, rempli en Task 4 */ }
+function newForbiddenBeat(letter) { /* stub, rempli en Task 6 */ }
+
+// Appelé après chaque mot accepté : détecte le franchissement d'un palier de 10.
+function maybeEscalate() {
+  const before = Letters.forbiddenCount(S.wordCount - 1, LETTER_EVERY);
+  const after = Letters.forbiddenCount(S.wordCount, LETTER_EVERY);
+  if (after > before) newForbiddenBeat(activeForbidden()[after - 1]);
+  renderForbidden();
+}
 
 // --- gauge loop -------------------------------------------------------------
 function tick(now) {

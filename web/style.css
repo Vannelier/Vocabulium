@@ -97,6 +97,27 @@ body {
   background: linear-gradient(180deg, #fff, #b9c0d6);
   -webkit-background-clip: text; background-clip: text; color: transparent; }
 
+/* --- Bande des lettres interdites ------------------------------------------ */
+.forbid { margin-bottom: 14px; }
+.forbid-head { font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--muted); display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 6px; }
+.forbid-next { font-weight: 800; color: var(--warm); letter-spacing: .02em; }
+.forbid-letters { display: flex; flex-wrap: wrap; gap: 8px; min-height: 34px; }
+.forbid-letters .fl { display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 34px; border-radius: 8px; background: rgba(255,59,87,.14);
+  border: 1.5px solid var(--bail); color: var(--bail); font-weight: 900; font-size: 19px;
+  text-transform: uppercase; position: relative; }
+.forbid-letters .fl::after { content: ""; position: absolute; left: 4px; right: 4px;
+  height: 2.5px; background: var(--bail); transform: rotate(-12deg); }
+.forbid-empty { color: var(--muted); font-size: 12px; opacity: .7; align-self: center; }
+.forbid-letters .fl.blink { animation: flblink .5s ease-out 3; }
+@keyframes flblink {
+  0%,100% { background: rgba(255,59,87,.14); transform: scale(1); }
+  50% { background: var(--bail); color: #fff; transform: scale(1.18);
+        box-shadow: 0 0 14px var(--bail); }
+}
+
 /* --- Juice "mot rare" : glow doré + gerbe d'étincelles -------------------- */
 .current .word.rareglow { animation: rareGlow .85s ease-out; }
 @keyframes rareGlow {
