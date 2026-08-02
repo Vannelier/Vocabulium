@@ -264,3 +264,20 @@ body {
   font-size: 15px; padding: 12px 24px; border-radius: 12px; cursor: pointer; }
 .adslot { margin-top: 18px; min-height: 90px; width: 100%; max-width: 336px;
   display: flex; align-items: center; justify-content: center; }
+
+/* --- Mobile-first : tout le nécessaire au-dessus du clavier virtuel -------- */
+@media (max-width: 560px) {
+  #app { padding: 12px; }
+  .current .word { font-size: clamp(34px, 12vw, 56px); }
+  .current { margin: 4px 0 14px; }
+  .forbid-letters .fl { width: 34px; height: 40px; font-size: 21px; }  /* cibles tactiles >=40px */
+  #guess { font-size: 18px; padding: 14px 14px; }
+  .hud .val { font-size: 26px; }
+  .mult { font-size: 18px; }
+  .detail, .portal, .forbid { margin-bottom: 10px; }
+  .end .b2, .beat .b2 { font-size: 44px; }
+  .end .final { font-size: 60px; }
+  .adslot-end, .adslot-start { min-height: 100px; }
+  .endbtns { flex-wrap: wrap; }
+  .endbtns button { flex: 1; min-width: 130px; }
+}
