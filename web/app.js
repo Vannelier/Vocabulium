@@ -22,6 +22,7 @@ const el = {
   sharegrid: $("sharegrid"), share: $("share"),
   again: $("again"), start: $("start"), play: $("play"),
   forbidLetters: $("forbidLetters"), forbidNext: $("forbidNext"),
+  recordbeat: $("recordbeat"), endrecord: $("endrecord"),
 };
 
 let cfg = {
@@ -36,7 +37,11 @@ const S = {
   lastHopTs: 0, started: false, running: false,
   gauge: 1, lastFrame: 0, hops: 0, weakHops: 0, misses: 0, bestBridge: null,
   forbiddenOrder: [], wordCount: 0, zonesPlayed: [],
+  best: 0, recordBeaten: false,
 };
+
+const BEST_KEY = "Vocabulium_best";
+const loadBest = () => Number(localStorage.getItem(BEST_KEY) || 0);
 
 const MISS_LIMIT = 2;   // 1er raté : le mult tressaille · 2e raté consécutif : reset ×1
 const RARE_THRESHOLD = 0.6;   // au-delà : juice "rare" (étincelles + glow)
@@ -67,12 +72,13 @@ async function prepareRun() {
     score: 0, mult: 1, lastHopTs: 0,
     started: false, running: false, gauge: 1, lastFrame: 0,
     hops: 0, weakHops: 0, misses: 0, bestBridge: null, wordCount: 0,
-    zonesPlayed: [],
+    zonesPlayed: [], best: loadBest(), recordBeaten: false,
   });
   el.trail.innerHTML = "";
   el.current.textContent = seedWord;
   el.guess.value = ""; el.guess.disabled = true;
   el.end.classList.remove("show");
+  el.pnum.classList.remove("record");
   el.gauge.style.transform = "scaleX(1)";
   el.detail.className = "detail";
   el.dword.textContent = "—"; el.dpts.textContent = "";
@@ -100,6 +106,24 @@ function startRun() {
 // --- rendering --------------------------------------------------------------
 function renderHud() {
   el.pnum.textContent = Math.round(S.score);
+}
+
+// High score : dès que le score EN COURS dépasse le record précédent (>0), on le
+// fête une seule fois — bannière dorée plein écran + score qui pulse en or. S'il
+// n'y avait pas de record antérieur, on ne déclenche rien en jeu (rien à battre).
+function maybeRecord() {
+  if (S.recordBeaten || S.best <= 0) return;
+  if (S.score > S.best) {
+    S.recordBeaten = true;
+    recordFlash();
+  }
+}
+function recordFlash() {
+  el.recordbeat.innerHTML = `<div class="rb1">★ nouveau record ★</div>`;
+  el.recordbeat.classList.remove("play"); void el.recordbeat.offsetWidth;
+  el.recordbeat.classList.add("play");
+  el.pnum.classList.remove("record"); void el.pnum.offsetWidth;
+  el.pnum.classList.add("record");     // le nombre reste doré : on tient le record
 }
 
 // Le multiplicateur, avec juice. evt: "grow" (montée), "warn" (1er raté, tressaille),
@@ -267,6 +291,14 @@ function shake() {
   setTimeout(() => el.guess.classList.remove("shake"), 300);
 }
 
+// Le mot était trop loin -> on n'avance pas, le mot d'ancrage reste le même.
+// On le fait pulser une fois en bleu pour montrer qu'il n'a PAS changé.
+function blinkUnchanged() {
+  el.current.classList.remove("samehold");
+  void el.current.offsetWidth;
+  el.current.classList.add("samehold");
+}
+
 function activeForbidden() {
   return Letters.activeForbidden(S.forbiddenOrder, S.wordCount, LETTER_EVERY);
 }
@@ -351,7 +383,7 @@ async function submitHop() {
 
   if (res.zone === "reject") {               // trop loin : compte comme un raté (filet)
     showDetail(res, 0, "reject");
-    registerMiss(); shake(); el.guess.value = "";
+    registerMiss(); shake(); blinkUnchanged(); el.guess.value = "";
     return;
   }
 
@@ -390,6 +422,7 @@ async function submitHop() {
   toastScore(gained, res.zone === "weak" ? "weakt" : "", res.rarete);
   if (res.rarete >= RARE_THRESHOLD) rareJuice(res.rarete);
   renderHud();
+  maybeRecord();
 }
 
 function endRun() {
@@ -397,10 +430,21 @@ function endRun() {
   renderHud();
   el.guess.disabled = true;
 
-  const key = "Vocabulium_best";
-  const prev = Number(localStorage.getItem(key) || 0);
-  const best = Math.max(prev, S.score);
-  localStorage.setItem(key, String(best));
+  const prev = S.best;                          // record AU DÉBUT de cette partie
+  const score = Math.round(S.score);
+  const beaten = prev > 0 && score > prev;      // record existant battu ?
+  const best = Math.max(prev, score);
+  localStorage.setItem(BEST_KEY, String(best));
+
+  el.endrecord.classList.remove("hit");
+  if (beaten) {
+    el.endrecord.innerHTML = `★ nouveau record ★ <b>${best}</b>`;
+    void el.endrecord.offsetWidth; el.endrecord.classList.add("hit");
+  } else if (prev <= 0) {
+    el.endrecord.innerHTML = `premier record <b>${best}</b>`;
+  } else {
+    el.endrecord.innerHTML = `record à battre <b>${best}</b>`;
+  }
 
   const letters = Letters.forbiddenCount(S.wordCount, LETTER_EVERY);
   el.final.textContent = Math.round(S.score);
@@ -417,6 +461,25 @@ function endRun() {
   };
   el.end.classList.add("show");
 }
+
+// --- clavier virtuel mobile -------------------------------------------------
+// Sans ça, le clavier recouvre la saisie (body centré + overflow hidden). On
+// détecte l'ouverture via visualViewport (iOS ne redimensionne pas la page) et
+// on bascule en mode défilable ancré en haut, saisie ramenée dans la vue. Sur
+// Chrome Android, interactive-widget=resizes-content réduit déjà la page.
+(function handleKeyboard() {
+  const vv = window.visualViewport;
+  if (!vv) return;
+  let baseH = vv.height;
+  const onResize = () => {
+    baseH = Math.max(baseH, vv.height);              // plus grande hauteur vue = sans clavier
+    const open = baseH - vv.height > 140;            // clavier vraisemblablement ouvert
+    document.body.classList.toggle("kb-open", open);
+    if (open && document.activeElement === el.guess)
+      el.guess.scrollIntoView({ block: "center" });
+  };
+  vv.addEventListener("resize", onResize);
+})();
 
 // --- events -----------------------------------------------------------------
 el.guess.addEventListener("keydown", (e) => {
