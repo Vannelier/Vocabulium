@@ -270,6 +270,9 @@ function activeForbidden() {
   return Letters.activeForbidden(S.forbiddenOrder, S.wordCount, LETTER_EVERY);
 }
 
+function flashForbidden(letters) { /* stub, rempli en Task 5 */ }
+function maybeEscalate() { /* stub, rempli en Task 4 */ }
+
 // --- gauge loop -------------------------------------------------------------
 function tick(now) {
   if (!S.running) return;
@@ -286,6 +289,16 @@ async function submitHop() {
   const raw = el.guess.value.trim();
   if (!raw) return bank();
   if (!S.running) return;
+
+  const active = activeForbidden();
+  const offending = Letters.offendingLetters(raw.toLowerCase(), active);
+  if (offending.length) {
+    // refusé : ni raté, ni casse de combo. Juste illégal -> feedback + retry.
+    flashForbidden(offending);
+    shake();
+    el.guess.value = "";
+    return;                             // la jauge continue de tourner (le coût = temps)
+  }
 
   const t = (performance.now() - S.lastHopTs) / 1000;
   let res;
@@ -320,6 +333,8 @@ async function submitHop() {
   const gained = res.hop_points * S.mult;
   S.pending += gained;
   S.played.add(res.word);
+  S.wordCount += 1;
+  maybeEscalate();
   S.current = res.word;
   S.lastHopTs = performance.now();
   el.current.textContent = res.word;
