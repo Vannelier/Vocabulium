@@ -1,8 +1,8 @@
 "use strict";
 // Module PUR (aucun DOM). Exposé sur window (pas de bundler dans le projet).
 (function (root) {
-  // Fréquences des lettres en français (%). Sert à PONDÉRER le tirage : on veut
-  // les lettres RARES d'abord (poids ∝ 1/fréquence), les courantes tard.
+  // Fréquences des lettres en français (%). Gardé pour référence (a inspiré les
+  // paliers de drawOrder) ; le tirage n'est plus pondéré par cette table.
   const FREQ = {
     a: 7.6, b: 0.9, c: 3.3, d: 3.7, e: 14.7, f: 1.1, g: 0.9, h: 0.7, i: 7.5,
     j: 0.5, k: 0.05, l: 5.5, m: 3.0, n: 7.1, o: 5.4, p: 3.0, q: 1.4, r: 6.6,
@@ -34,20 +34,31 @@
     return ch.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase();
   }
 
-  // Ordre COMPLET des 26 lettres, tirées sans remise, pondérées par 1/fréquence
-  // (rares d'abord). `rand` = fonction 0..1 (Math.random en endless, rng(seed) en daily).
-  // Retourne la liste ordonnée : la i-ème lettre interdite = ordre[i].
-  function drawOrder(rand) {
-    const pool = ALPHABET.map((L) => ({ L, w: 1 / FREQ[L] }));
-    const order = [];
-    while (pool.length) {
-      const total = pool.reduce((s, p) => s + p.w, 0);
-      let r = rand() * total, idx = 0;
-      while (r > pool[idx].w) { r -= pool[idx].w; idx++; }
-      order.push(pool[idx].L);
-      pool.splice(idx, 1);
+  // RAMPE D'IMPACT. Bannir une lettre doit VRAIMENT gêner : pondérer par rareté
+  // (w, k, z d'abord) ne contraignait rien — ces lettres n'apparaissent quasi
+  // jamais. On tire donc par PALIERS d'impact croissant :
+  //   1. consonnes courantes mais contournables -> mordent dès la 1re interdiction
+  //   2. voyelles (hors e) + consonnes moyennes -> plus dur
+  //   3. « e » -> la pire, réservée aux paliers profonds
+  //   4. lettres rares -> impact quasi nul, reléguées à la toute fin (jamais gaspillées tôt)
+  // L'ordre est mélangé DANS chaque palier (variété entre parties), de façon
+  // déterministe en daily (même `rand`). i-ème lettre interdite = ordre[i].
+  const TIERS = [
+    ["s", "r", "t", "n", "l", "m", "d", "p", "c"],
+    ["a", "i", "o", "u", "v", "g", "b", "f", "h"],
+    ["e"],
+    ["q", "j", "x", "y", "z", "k", "w"],
+  ];
+  function shuffle(arr, rand) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
     }
-    return order;
+    return a;
+  }
+  function drawOrder(rand) {
+    return TIERS.reduce((order, tier) => order.concat(shuffle(tier, rand)), []);
   }
 
   // Nb de lettres interdites après `words` mots acceptés, 1 nouvelle tous les `every`.
