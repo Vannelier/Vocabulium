@@ -469,19 +469,30 @@ function endRun() {
 }
 
 // --- clavier virtuel mobile -------------------------------------------------
-// Le layout est désormais défilable (body flex-start + margin auto) : il suffit
-// de ramener la saisie dans la vue quand le clavier s'ouvre (focus) ou quand la
-// zone visible change (visualViewport). block:"end" -> saisie juste au-dessus du
-// clavier, un max de contenu (mot courant, lettres interdites) visible au-dessus.
-function bringInputIntoView() {
-  el.guess.scrollIntoView({ block: "end", behavior: "smooth" });
-}
-el.guess.addEventListener("focus", () => setTimeout(bringInputIntoView, 250));
-if (window.visualViewport) {
-  window.visualViewport.addEventListener("resize", () => {
-    if (document.activeElement === el.guess) bringInputIntoView();
-  });
-}
+// Le vrai problème : beaucoup de navigateurs mobiles ne redimensionnent PAS la
+// page quand le clavier s'ouvre — il la RECOUVRE. La page reste haute (100dvh ne
+// tient pas compte du clavier) donc non défilable, et la saisie est piégée sous
+// le clavier. On force alors la hauteur du body à la zone RÉELLEMENT visible
+// (visualViewport) : le body devient un conteneur défilable calé au-dessus du
+// clavier, et on y ramène la saisie. Sur les navigateurs qui redimensionnent
+// déjà (Chrome interactive-widget), l'opération est neutre.
+(function mobileKeyboard() {
+  const vv = window.visualViewport;
+  if (!vv) return;
+  const sync = () => {
+    const h = vv.height + "px";
+    document.body.style.height = h;
+    document.body.style.minHeight = h;     // écrase le 100dvh, sinon la page reste trop haute
+  };
+  const reveal = () => {
+    if (document.activeElement === el.guess)
+      el.guess.scrollIntoView({ block: "end", behavior: "smooth" });
+  };
+  vv.addEventListener("resize", () => { sync(); setTimeout(reveal, 60); });
+  vv.addEventListener("scroll", sync);
+  el.guess.addEventListener("focus", () => setTimeout(reveal, 250));
+  sync();
+})();
 
 // --- events -----------------------------------------------------------------
 el.guess.addEventListener("keydown", (e) => {
