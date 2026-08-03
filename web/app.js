@@ -95,7 +95,7 @@ async function prepareRun() {
   renderGate(null);
   setBars(0, 0, true);
   renderHud();
-  renderRank();
+  renderRank(true);
   renderForbidden();
 }
 
@@ -138,16 +138,25 @@ function recordFlash() {
 // --- Rang : la lettre-jauge. `S.mult` reste le MIROIR de RANK_MULT[rankIndex]
 // pour ne rien changer à la ligne de scoring (gained = hop_points * S.mult).
 function syncMult() { S.mult = RANK_MULT[S.rankIndex]; }
-function renderRank() {
+// instant=true : coupe la transition du remplissage (changement de lettre) ;
+// sinon le remplissage GLISSE jusqu'à sa nouvelle valeur.
+function renderRank(instant) {
   const i = S.rankIndex, col = RANK_COLOR[i];
   el.rankltr.dataset.l = RANK_NAMES[i];
   el.rankltr.textContent = RANK_NAMES[i];
   el.rank.style.setProperty("--rank-color", col);
-  el.rank.style.setProperty("--rank-fill",
-    (Math.max(0, Math.min(1, S.rankFill)) * 100).toFixed(1) + "%");
   el.mult.textContent = "×" + RANK_MULT[i].toFixed(2);
   el.mult.style.color = col;
-  el.rank.classList.toggle("hot", i >= 5);   // SS/SSS : pulse "en feu" (anim en Task 2)
+  el.rank.classList.toggle("hot", i >= 5);   // SS/SSS : pulse "en feu"
+  const pct = (Math.max(0, Math.min(1, S.rankFill)) * 100).toFixed(1) + "%";
+  if (instant) {
+    el.rank.classList.add("instant");
+    el.rank.style.setProperty("--rank-fill", pct);
+    void el.rankltr.offsetWidth;              // commit sans transition
+    el.rank.classList.remove("instant");
+  } else {
+    el.rank.style.setProperty("--rank-fill", pct);   // glisse (transition CSS)
+  }
 }
 // Relance une animation CSS (retire la classe, reflow, remet).
 function replay(elm, cls) { elm.classList.remove(cls); void elm.offsetWidth; elm.classList.add(cls); }
@@ -165,17 +174,17 @@ function addFill(amount) {
     S.rankFill = Math.max(0, S.rankFill - 1); S.rankIndex += 1; leveled = true; rankUp();
   }
   if (S.rankIndex >= RANK_NAMES.length - 1) S.rankFill = Math.min(S.rankFill, 1);
-  syncMult(); renderRank();
+  syncMult(); renderRank(leveled);            // glisse si pas de rang-up ; instantané sinon
   if (!leveled) replay(el.rankltr, "bump");   // pas de rang-up : simple rebond
 }
 function rankDown() {
   if (S.rankIndex > 0) { S.rankIndex -= 1; S.rankFill = DROP_FILL; }
   else S.rankFill = 0;                        // déjà à D : on vide, sans descendre
-  syncMult(); renderRank();
+  syncMult(); renderRank(true);
   replay(el.rankltr, "crack"); screenShake("s");
 }
 function shatter() {
-  S.rankIndex = 0; S.rankFill = 0; syncMult(); renderRank();
+  S.rankIndex = 0; S.rankFill = 0; syncMult(); renderRank(true);
   replay(el.rankltr, "shatter"); screenShake("l");
 }
 
