@@ -52,7 +52,7 @@ const RARE_HI = 0.85;         // au-delà : juice renforcé "très rare"
 // --- Rang (le multiplicateur relooké : D -> SSS, la lettre EST la jauge) -----
 const RANK_NAMES = ["D", "C", "B", "A", "S", "SS", "SSS"];
 const RANK_MULT  = [1.0, 1.4, 1.8, 2.3, 3.0, 4.0, 5.5];
-const RANK_COLOR = ["#8a94a6", "#35d0ba", "#38bdf8", "#a78bfa", "#ffd34e", "#ff8c1a", "#ff2d55"];
+const RANK_COLOR = ["#9385c4", "#20ffb2", "#22e6ff", "#b25cff", "#ffd23f", "#ff7a2f", "#ff2e5b"];
 const FILL_STEP = 0.55, FILL_FLOOR = 0.45, FILL_WEAK = 0.12, DROP_FILL = 0.30;
 
 const LETTER_EVERY = 5;           // une nouvelle lettre interdite tous les 5 mots
@@ -483,8 +483,8 @@ async function submitHop() {
   el.gauge.style.transform = `scaleX(${S.gauge})`;
 
   let captureBonus = 0;
-  if (res.word === S.target) {                   // CAPTURE : mot cible exact & accepté
-    captureBonus = Math.round(S.targetBonus * S.mult);   // × rang courant
+  if (res.word === S.target) {                   // CAPTURE : mot bonus exact & accepté
+    captureBonus = S.targetBonus;                // fixe et prédictible, EN PLUS des points du mot
     S.score += captureBonus;
     S.captures += 1;
     el.cible.classList.remove("captured"); void el.cible.offsetWidth;

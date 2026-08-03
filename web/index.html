@@ -4,7 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content">
   <title>Vocabulium</title>
-  <link rel="stylesheet" href="/style.css?v=43">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css?v=45">
 </head>
 <body>
   <div id="app">
@@ -12,19 +15,19 @@
       <div class="stat" id="score"><div class="label">Score</div>
         <div class="val"><span id="pnum">0</span><span class="jeop" id="jeop"></span></div>
         <div class="rank" id="rank"><span class="rankltr" id="rankltr" data-l="D">D</span><span class="mult" id="mult">×1.00</span></div></div>
+      <div class="cible" id="cible" style="display:none">
+        <div class="cible-head">Mot bonus</div>
+        <div class="cible-row"><span class="cible-word" id="cibleWord">—</span><span class="cible-bonus" id="cibleBonus">+0</span></div>
+      </div>
     </div>
     <div class="timer"><i id="timerbar"></i></div>
 
-    <div class="trail" id="trail"></div>
     <div class="forbid" id="forbid">
       <div class="forbid-head">Lettres interdites</div>
       <div class="forbid-letters" id="forbidLetters"></div>
       <div class="forbid-next" id="forbidNext">prochaine dans 10</div>
     </div>
-    <div class="cible" id="cible" style="display:none">
-      <div class="cible-head">Cible</div>
-      <div class="cible-row"><span class="cible-word" id="cibleWord">—</span><span class="cible-bonus" id="cibleBonus">+0</span></div>
-    </div>
+    <div class="trail" id="trail"></div>
     <div class="current">
       <div class="word" id="current">…</div>
     </div>
@@ -83,7 +86,7 @@
     <div class="adslot adslot-end" id="adEnd"><!-- AdSense (fin) : coller ici le <ins class="adsbygoogle">. JAMAIS près de la saisie/boutons de jeu. --></div>
   </div>
 
-  <script src="/letters.js?v=43"></script>
-  <script src="/app.js?v=43"></script>
+  <script src="/letters.js?v=45"></script>
+  <script src="/app.js?v=45"></script>
 </body>
 </html>

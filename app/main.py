@@ -86,6 +86,15 @@ def get_neighbors(word: str):
     return {"word": canon, "neighbors": db.top_neighbors(canon)}
 
 
+def _target_bonus(zipf: float) -> int:
+    """Bonus ROND par palier de rareté (300/400/500/600), fixe et prédictible."""
+    r = rarete(zipf)
+    for i, cut in enumerate(C.TARGET_BONUS_CUTS):
+        if r < cut:
+            return C.TARGET_BONUS_TIERS[i]
+    return C.TARGET_BONUS_TIERS[-1]
+
+
 @app.get("/api/target")
 def get_target(current: str, avoid: str = "", captures: int = 0):
     """Mot cible (waypoint) : rare, sans lettre interdite active, non immédiat."""
@@ -93,8 +102,7 @@ def get_target(current: str, avoid: str = "", captures: int = 0):
     if not w:
         return {"word": None}
     z = db.zipf(w)
-    bonus = C.TARGET_BASE + round(C.TARGET_RARE_W * rarete(z))
-    return {"word": w, "zipf": round(z, 3), "bonus_base": bonus}
+    return {"word": w, "zipf": round(z, 3), "bonus_base": _target_bonus(z)}
 
 
 @app.get("/")

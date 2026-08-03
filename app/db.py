@@ -155,6 +155,7 @@ class Vocab:
         cand = [w for w in self._id2word
                 if z_lo <= self._zipf[w] <= z_hi
                 and w != cur
+                and len(w) <= 12                       # reste lisible/tapable dans le HUD
                 and not (avoid_set & set(fold(w)))]
         random.shuffle(cand)
         for w in cand:
