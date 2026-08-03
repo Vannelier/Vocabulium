@@ -61,14 +61,14 @@
     return TIERS.reduce((order, tier) => order.concat(shuffle(tier, rand)), []);
   }
 
-  // Nb de lettres interdites après `words` mots acceptés, 1 nouvelle tous les `every`.
-  function forbiddenCount(words, every) {
-    return Math.floor(words / every);
+  // Nb de lettres interdites après `words` mots : `start` dès le départ, +1 tous les `every`.
+  function forbiddenCount(words, every, start = 0) {
+    return start + Math.floor(words / every);
   }
 
   // Les lettres interdites actives = les `forbiddenCount` premières de l'ordre.
-  function activeForbidden(order, words, every) {
-    return order.slice(0, forbiddenCount(words, every));
+  function activeForbidden(order, words, every, start = 0) {
+    return order.slice(0, forbiddenCount(words, every, start));
   }
 
   // Quelles lettres interdites (parmi `active`) apparaissent dans `word` (accents repliés).

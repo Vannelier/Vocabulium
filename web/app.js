@@ -46,7 +46,8 @@ const loadBest = () => Number(localStorage.getItem(BEST_KEY) || 0);
 const MISS_LIMIT = 2;   // 1er raté : le mult tressaille · 2e raté consécutif : reset ×1
 const RARE_THRESHOLD = 0.6;   // au-delà : juice "rare" (étincelles + glow)
 const RARE_HI = 0.85;         // au-delà : juice renforcé "très rare"
-const LETTER_EVERY = 10;
+const LETTER_EVERY = 5;           // une nouvelle lettre interdite tous les 5 mots
+const START_FORBIDDEN = 1;        // ... et 1 lettre déjà interdite dès le départ (tempo « nerveux »)
 const FIRST_GAUGE_FACTOR = 2.0;   // le 1er chrono dure 2× plus longtemps (le temps de comprendre)
 
 // --- init -------------------------------------------------------------------
@@ -301,7 +302,7 @@ function blinkUnchanged() {
 }
 
 function activeForbidden() {
-  return Letters.activeForbidden(S.forbiddenOrder, S.wordCount, LETTER_EVERY);
+  return Letters.activeForbidden(S.forbiddenOrder, S.wordCount, LETTER_EVERY, START_FORBIDDEN);
 }
 
 function renderForbidden() {
@@ -325,8 +326,8 @@ function newForbiddenBeat(letter) {
 
 // Appelé après chaque mot accepté : détecte le franchissement d'un palier de 10.
 function maybeEscalate() {
-  const before = Letters.forbiddenCount(S.wordCount - 1, LETTER_EVERY);
-  const after = Letters.forbiddenCount(S.wordCount, LETTER_EVERY);
+  const before = Letters.forbiddenCount(S.wordCount - 1, LETTER_EVERY, START_FORBIDDEN);
+  const after = Letters.forbiddenCount(S.wordCount, LETTER_EVERY, START_FORBIDDEN);
   if (after > before) newForbiddenBeat(activeForbidden()[after - 1]);
   renderForbidden();
 }
@@ -457,7 +458,7 @@ function endRun() {
     el.endrecord.innerHTML = `record à battre <b>${best}</b>`;
   }
 
-  const letters = Letters.forbiddenCount(S.wordCount, LETTER_EVERY);
+  const letters = Letters.forbiddenCount(S.wordCount, LETTER_EVERY, START_FORBIDDEN);
   el.final.textContent = Math.round(S.score);
   el.recap.innerHTML = `${S.wordCount} mots · survécu à <b>${letters}</b> lettre${letters>1?'s':''} interdite${letters>1?'s':''}`;
   const grid = S.zonesPlayed.map(z => z === "strong" ? "🟩" : "🟨");
