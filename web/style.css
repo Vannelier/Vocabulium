@@ -45,10 +45,14 @@ body {
 .rankltr { position: relative; font-weight: 900; font-size: 52px; line-height: 1;
   letter-spacing: -.02em; color: transparent; will-change: transform;
   -webkit-text-stroke: 3px var(--rank-color); }
-/* couche de remplissage : même lettre, révélée de bas en haut selon --rank-fill */
+/* couche de remplissage : même lettre, révélée de bas en haut selon --rank-fill.
+   Le remplissage GLISSE (transition) sur un coup normal ; on le coupe (.instant)
+   quand la lettre CHANGE (rang-up/down/shatter/reset) pour éviter un drain moche. */
 .rankltr::before { content: attr(data-l); position: absolute; inset: 0;
   color: var(--rank-color); -webkit-text-stroke: 0;
-  clip-path: inset(calc(100% - var(--rank-fill)) 0 0 0); }
+  clip-path: inset(calc(100% - var(--rank-fill)) 0 0 0);
+  transition: clip-path .22s ease-out; }
+.rank.instant .rankltr::before { transition: none; }
 .rank .mult { font-size: 20px; font-weight: 900; color: var(--muted);
   transition: color .15s; }
 
