@@ -149,23 +149,34 @@ function renderRank() {
   el.mult.style.color = col;
   el.rank.classList.toggle("hot", i >= 5);   // SS/SSS : pulse "en feu" (anim en Task 2)
 }
-function rankUp() { /* Task 2 : juice de slam */ }
+// Relance une animation CSS (retire la classe, reflow, remet).
+function replay(elm, cls) { elm.classList.remove(cls); void elm.offsetWidth; elm.classList.add(cls); }
+function screenShake(kind) {              // "s" | "m" | "l"
+  const c = "shake-" + kind, app = document.getElementById("app");
+  app.classList.remove("shake-s", "shake-m", "shake-l"); void app.offsetWidth; app.classList.add(c);
+  setTimeout(() => app.classList.remove(c), 450);
+}
+function rankUp() { replay(el.rankltr, "slam"); screenShake("m"); }
 // Remplit la lettre ; déborde -> monte d'un rang (report du surplus). Plafonné à SSS.
 function addFill(amount) {
+  let leveled = false;
   S.rankFill += amount;
   while (S.rankFill >= 1 - 1e-9 && S.rankIndex < RANK_NAMES.length - 1) {
-    S.rankFill = Math.max(0, S.rankFill - 1); S.rankIndex += 1; rankUp();
+    S.rankFill = Math.max(0, S.rankFill - 1); S.rankIndex += 1; leveled = true; rankUp();
   }
   if (S.rankIndex >= RANK_NAMES.length - 1) S.rankFill = Math.min(S.rankFill, 1);
   syncMult(); renderRank();
+  if (!leveled) replay(el.rankltr, "bump");   // pas de rang-up : simple rebond
 }
 function rankDown() {
   if (S.rankIndex > 0) { S.rankIndex -= 1; S.rankFill = DROP_FILL; }
   else S.rankFill = 0;                        // déjà à D : on vide, sans descendre
-  syncMult(); renderRank();                   // Task 2 : + crack rouge
+  syncMult(); renderRank();
+  replay(el.rankltr, "crack"); screenShake("s");
 }
 function shatter() {
-  S.rankIndex = 0; S.rankFill = 0; syncMult(); renderRank();   // Task 2 : + shatter
+  S.rankIndex = 0; S.rankFill = 0; syncMult(); renderRank();
+  replay(el.rankltr, "shatter"); screenShake("l");
 }
 
 // Un mot refusé (trop loin) ou inexistant (typo) : filet en DEUX temps.
@@ -441,6 +452,7 @@ async function submitHop() {
   toastScore(gained, res.zone === "weak" ? "weakt" : "", res.rarete);
   if (res.rarete >= RARE_THRESHOLD) rareJuice(res.rarete);
   renderHud();
+  if (!el.pnum.classList.contains("record")) replay(el.pnum, "pop");
   maybeRecord();
 }
 

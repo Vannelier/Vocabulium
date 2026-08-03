@@ -52,6 +52,49 @@ body {
 .rank .mult { font-size: 20px; font-weight: 900; color: var(--muted);
   transition: color .15s; }
 
+/* --- Juice Hotline : slam / bump / crack / shatter / shake / pulse --------- */
+/* rang-up : la lettre s'écrase depuis grand + aberration chromatique */
+.rankltr.slam { animation: rankslam .45s cubic-bezier(.2,1.6,.4,1); }
+@keyframes rankslam {
+  0%   { transform: scale(2.2); opacity: .2;
+         filter: drop-shadow(3px 0 0 #0ff) drop-shadow(-3px 0 0 #f0f); }
+  40%  { transform: scale(.9); }
+  100% { transform: scale(1); opacity: 1; filter: none; }
+}
+/* remplissage sans rang-up : petit rebond */
+.rankltr.bump { animation: rankbump .22s ease-out; }
+@keyframes rankbump { 0%{transform:scale(1)} 45%{transform:scale(1.18)} 100%{transform:scale(1)} }
+/* rang-down : crack rouge */
+.rankltr.crack { animation: rankcrack .3s ease-out; }
+@keyframes rankcrack {
+  0%,100% { filter: none; transform: translateX(0) rotate(0); }
+  30% { filter: drop-shadow(0 0 10px #ff3b57); transform: translateX(-4px) rotate(-3deg); }
+  60% { transform: translateX(4px) rotate(3deg); }
+}
+/* shatter : la lettre explose (scale + rouge) */
+.rankltr.shatter { animation: rankshatter .5s ease-out; }
+@keyframes rankshatter {
+  0%   { transform: scale(1); filter: drop-shadow(0 0 14px #ff2d55); }
+  40%  { transform: scale(1.3); opacity: .8; }
+  100% { transform: scale(.6); opacity: 1; filter: none; }
+}
+/* pulse "en feu" aux hauts rangs (SS/SSS) */
+.rank.hot .rankltr { animation: hotpulse 1.1s ease-in-out infinite; }
+@keyframes hotpulse {
+  0%,100% { filter: drop-shadow(0 0 6px var(--rank-color)); }
+  50%     { filter: drop-shadow(0 0 20px var(--rank-color)); }
+}
+/* screen shake (sur #app), 3 intensités */
+.shake-s { animation: shakeS .18s; }
+.shake-m { animation: shakeM .28s; }
+.shake-l { animation: shakeL .4s; }
+@keyframes shakeS { 25%{transform:translate(2px,-1px)} 75%{transform:translate(-2px,1px)} }
+@keyframes shakeM { 20%{transform:translate(-4px,2px)} 60%{transform:translate(4px,-2px)} }
+@keyframes shakeL { 10%{transform:translate(-7px,3px)} 40%{transform:translate(7px,-4px)} 70%{transform:translate(-5px,2px)} }
+/* pop du score à chaque coup */
+#pnum.pop { animation: scorepop .2s ease-out; }
+@keyframes scorepop { 0%{transform:scale(1)} 50%{transform:scale(1.25)} 100%{transform:scale(1)} }
+
 /* --- Timer ---------------------------------------------------------------- */
 .timer { height: 6px; background: var(--line); border-radius: 4px; overflow: hidden;
   margin-bottom: 22px; }
