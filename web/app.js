@@ -47,6 +47,7 @@ const MISS_LIMIT = 2;   // 1er raté : le mult tressaille · 2e raté consécuti
 const RARE_THRESHOLD = 0.6;   // au-delà : juice "rare" (étincelles + glow)
 const RARE_HI = 0.85;         // au-delà : juice renforcé "très rare"
 const LETTER_EVERY = 10;
+const FIRST_GAUGE_FACTOR = 2.0;   // le 1er chrono dure 2× plus longtemps (le temps de comprendre)
 
 // --- init -------------------------------------------------------------------
 async function fetchSeed() {
@@ -335,7 +336,11 @@ function tick(now) {
   if (!S.running) return;
   const dt = (now - S.lastFrame) / 1000;
   S.lastFrame = now;
-  S.gauge = Math.max(0, S.gauge - dt / cfg.gauge_seconds);
+  // Le TOUT premier chrono (avant le 1er mot posé) est allongé en douce, pour
+  // laisser le temps de comprendre. Rien n'est affiché : la jauge se vide juste
+  // plus lentement tant que wordCount === 0, puis revient à la normale.
+  const secs = cfg.gauge_seconds * (S.wordCount === 0 ? FIRST_GAUGE_FACTOR : 1);
+  S.gauge = Math.max(0, S.gauge - dt / secs);
   el.gauge.style.transform = `scaleX(${S.gauge})`;
   if (S.gauge <= 0) return endRun();
   requestAnimationFrame(tick);
