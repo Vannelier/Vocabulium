@@ -39,36 +39,18 @@ body {
 .stat .val { font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums;
   line-height: 1.1; }
 #score .val { color: var(--bank); }
-.mult { display: inline-block; font-size: 21px; font-weight: 900; margin-left: 8px;
-  color: var(--muted); transform: scale(var(--s, 1)); transform-origin: left center;
-  transition: color .15s; will-change: transform; }
-/* Montée : gros pop élastique, avec une inclinaison dont le SENS alterne (--tilt). */
-.mult.bump { animation: mbump .4s cubic-bezier(.28,1.5,.5,1); }
-@keyframes mbump {
-  0%   { transform: scale(calc(var(--s,1) * 1.85)) rotate(calc(var(--tilt,1) * 12deg)); }
-  50%  { transform: scale(calc(var(--s,1) * 0.86)) rotate(calc(var(--tilt,1) * -5deg)); }
-  100% { transform: scale(var(--s,1)) rotate(0deg); }
-}
-/* 1er raté : le mult tressaille en rouge sans casser (avertissement). */
-.mult.warn { animation: mwarn .5s ease-out; }
-@keyframes mwarn {
-  0%,100% { transform: scale(var(--s,1)) rotate(0); filter: none; }
-  18% { transform: scale(calc(var(--s,1)*1.22)) rotate(-9deg);
-        filter: drop-shadow(0 0 12px var(--bail)); color: var(--bail); }
-  46% { transform: scale(calc(var(--s,1)*1.08)) rotate(8deg);
-        filter: drop-shadow(0 0 8px var(--bail)); }
-  72% { transform: scale(var(--s,1)) rotate(-4deg); }
-}
-/* 2e raté : casse — flash blanc, s'effondre en rouge puis noir. */
-.mult.brk { animation: mbrk .62s ease-out; }
-@keyframes mbrk {
-  0%   { transform: scale(1.5); color: #fff; text-shadow: 0 0 22px #fff; }
-  16%  { transform: scale(.45) rotate(-14deg); color: var(--bail);
-         text-shadow: 0 0 26px var(--bail); }
-  42%  { transform: scale(1.12) rotate(8deg); color: #0a0a0a; text-shadow: none; }
-  70%  { transform: scale(.95) rotate(-3deg); }
-  100% { transform: scale(1); }
-}
+/* --- Rang (le multiplicateur relooké : la lettre EST la jauge) ------------- */
+.rank { display: flex; align-items: center; gap: 10px; margin-top: 4px;
+  --rank-color: #8a94a6; --rank-fill: 0%; }
+.rankltr { position: relative; font-weight: 900; font-size: 52px; line-height: 1;
+  letter-spacing: -.02em; color: transparent; will-change: transform;
+  -webkit-text-stroke: 3px var(--rank-color); }
+/* couche de remplissage : même lettre, révélée de bas en haut selon --rank-fill */
+.rankltr::before { content: attr(data-l); position: absolute; inset: 0;
+  color: var(--rank-color); -webkit-text-stroke: 0;
+  clip-path: inset(calc(100% - var(--rank-fill)) 0 0 0); }
+.rank .mult { font-size: 20px; font-weight: 900; color: var(--muted);
+  transition: color .15s; }
 
 /* --- Timer ---------------------------------------------------------------- */
 .timer { height: 6px; background: var(--line); border-radius: 4px; overflow: hidden;

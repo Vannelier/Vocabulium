@@ -4,7 +4,7 @@ const $ = (id) => document.getElementById(id);
 const el = {
   score: $("score").querySelector(".val"),
   pnum: $("pnum"),
-  mult: $("mult"),
+  rank: $("rank"), rankltr: $("rankltr"), mult: $("mult"),
   jeop: $("jeop"),
   gauge: $("timerbar"),
   trail: $("trail"),
@@ -33,7 +33,7 @@ let seedWord = null;
 
 const S = {
   mode: "random",
-  current: null, played: new Set(), score: 0, mult: 1,
+  current: null, played: new Set(), score: 0, mult: 1, rankIndex: 0, rankFill: 0,
   lastHopTs: 0, started: false, running: false,
   gauge: 1, lastFrame: 0, hops: 0, weakHops: 0, misses: 0, bestBridge: null,
   forbiddenOrder: [], wordCount: 0, zonesPlayed: [],
@@ -43,9 +43,16 @@ const S = {
 const BEST_KEY = "Vocabulium_best";
 const loadBest = () => Number(localStorage.getItem(BEST_KEY) || 0);
 
-const MISS_LIMIT = 2;   // 1er raté : le mult tressaille · 2e raté consécutif : reset ×1
+const MISS_LIMIT = 2;   // 1er raté : le rang chute d'un cran · 2e raté consécutif : shatter
 const RARE_THRESHOLD = 0.6;   // au-delà : juice "rare" (étincelles + glow)
 const RARE_HI = 0.85;         // au-delà : juice renforcé "très rare"
+
+// --- Rang (le multiplicateur relooké : D -> SSS, la lettre EST la jauge) -----
+const RANK_NAMES = ["D", "C", "B", "A", "S", "SS", "SSS"];
+const RANK_MULT  = [1.0, 1.4, 1.8, 2.3, 3.0, 4.0, 5.5];
+const RANK_COLOR = ["#8a94a6", "#35d0ba", "#38bdf8", "#a78bfa", "#ffd34e", "#ff8c1a", "#ff2d55"];
+const FILL_STEP = 0.55, FILL_FLOOR = 0.45, FILL_WEAK = 0.12, DROP_FILL = 0.30;
+
 const LETTER_EVERY = 5;           // une nouvelle lettre interdite tous les 5 mots
 const START_FORBIDDEN = 1;        // ... et 1 lettre déjà interdite dès le départ (tempo « nerveux »)
 const FIRST_GAUGE_FACTOR = 2.0;   // le 1er chrono dure 2× plus longtemps (le temps de comprendre)
@@ -71,7 +78,7 @@ async function prepareRun() {
   await fetchSeed();
   Object.assign(S, {
     current: seedWord, played: new Set([seedWord]),
-    score: 0, mult: 1, lastHopTs: 0,
+    score: 0, mult: 1, rankIndex: 0, rankFill: 0, lastHopTs: 0,
     started: false, running: false, gauge: 1, lastFrame: 0,
     hops: 0, weakHops: 0, misses: 0, bestBridge: null, wordCount: 0,
     zonesPlayed: [], best: loadBest(), recordBeaten: false,
@@ -88,7 +95,7 @@ async function prepareRun() {
   renderGate(null);
   setBars(0, 0, true);
   renderHud();
-  renderMult(null);
+  renderRank();
   renderForbidden();
 }
 
@@ -128,45 +135,46 @@ function recordFlash() {
   el.pnum.classList.add("record");     // le nombre reste doré : on tient le record
 }
 
-// Le multiplicateur, avec juice. evt: "grow" (montée), "warn" (1er raté, tressaille),
-// "break" (retour ×1), null (silencieux : reset encaissement / init).
-let _tilt = 1;   // signe d'inclinaison, alterné à chaque montée -> l'orientation change
-function renderMult(evt) {
-  const m = S.mult;
-  el.mult.textContent = "×" + m.toFixed(2);
-  const t = Math.max(0, Math.min(1, (m - 1) / (cfg.mult_max - 1)));  // ×1..MAX -> 0..1
-  el.mult.style.setProperty("--s", (1 + t * 0.95).toFixed(3));       // plus gros à mesure que ça monte
-  if (m <= 1.001) {
-    el.mult.style.color = "";                         // -> muted (CSS de base)
-    el.mult.style.textShadow = "none";
-  } else {
-    el.mult.style.color = `hsl(${Math.round(42 * (1 - t))},100%,${Math.round(62 - t * 12)}%)`;
-    el.mult.style.textShadow =
-      `0 0 ${Math.round(6 + t * 32)}px rgba(255,${(130 - t * 130) | 0},40,${(0.4 + t * 0.55).toFixed(2)})`;
+// --- Rang : la lettre-jauge. `S.mult` reste le MIROIR de RANK_MULT[rankIndex]
+// pour ne rien changer à la ligne de scoring (gained = hop_points * S.mult).
+function syncMult() { S.mult = RANK_MULT[S.rankIndex]; }
+function renderRank() {
+  const i = S.rankIndex, col = RANK_COLOR[i];
+  el.rankltr.dataset.l = RANK_NAMES[i];
+  el.rankltr.textContent = RANK_NAMES[i];
+  el.rank.style.setProperty("--rank-color", col);
+  el.rank.style.setProperty("--rank-fill",
+    (Math.max(0, Math.min(1, S.rankFill)) * 100).toFixed(1) + "%");
+  el.mult.textContent = "×" + RANK_MULT[i].toFixed(2);
+  el.mult.style.color = col;
+  el.rank.classList.toggle("hot", i >= 5);   // SS/SSS : pulse "en feu" (anim en Task 2)
+}
+function rankUp() { /* Task 2 : juice de slam */ }
+// Remplit la lettre ; déborde -> monte d'un rang (report du surplus). Plafonné à SSS.
+function addFill(amount) {
+  S.rankFill += amount;
+  while (S.rankFill >= 1 - 1e-9 && S.rankIndex < RANK_NAMES.length - 1) {
+    S.rankFill = Math.max(0, S.rankFill - 1); S.rankIndex += 1; rankUp();
   }
-  el.mult.classList.remove("bump", "brk", "warn");
-  if (evt === "grow") {
-    _tilt = -_tilt;                                   // alterne l'orientation du pop
-    el.mult.style.setProperty("--tilt", _tilt);
-    void el.mult.offsetWidth; el.mult.classList.add("bump");
-  } else if (evt === "warn") {
-    void el.mult.offsetWidth; el.mult.classList.add("warn");
-  } else if (evt === "break") {
-    void el.mult.offsetWidth; el.mult.classList.add("brk");
-  }
+  if (S.rankIndex >= RANK_NAMES.length - 1) S.rankFill = Math.min(S.rankFill, 1);
+  syncMult(); renderRank();
+}
+function rankDown() {
+  if (S.rankIndex > 0) { S.rankIndex -= 1; S.rankFill = DROP_FILL; }
+  else S.rankFill = 0;                        // déjà à D : on vide, sans descendre
+  syncMult(); renderRank();                   // Task 2 : + crack rouge
+}
+function shatter() {
+  S.rankIndex = 0; S.rankFill = 0; syncMult(); renderRank();   // Task 2 : + shatter
 }
 
-function breakCombo() {
-  if (S.mult > 1.001) { S.mult = 1; renderMult("break"); renderHud(); }
-}
-
-// Un mot refusé (trop loin) ou inexistant (typo) : filet en DEUX temps, sans texte.
-// 1er raté  -> le multiplicateur tressaille (avertissement) mais tient.
-// 2e raté   -> il casse et retombe à ×1. Un bon mot réarme le filet.
+// Un mot refusé (trop loin) ou inexistant (typo) : filet en DEUX temps.
+// 1er raté -> le rang chute d'un cran. 2e raté consécutif -> SHATTER (retour à D).
+// Un bon mot réarme le filet (clearMisses).
 function registerMiss() {
   S.misses += 1;
-  if (S.misses >= MISS_LIMIT) { S.misses = 0; breakCombo(); }
-  else if (S.mult > 1.001) { renderMult("warn"); }
+  if (S.misses >= MISS_LIMIT) { S.misses = 0; shatter(); }
+  else rankDown();
 }
 
 function clearMisses() {
@@ -413,13 +421,12 @@ async function submitHop() {
   el.guess.value = "";
 
   if (res.zone === "strong") {
-    // le combo monte selon la QUALITÉ du hop (surprise), plafonné -> qualité > longueur
-    const gain = cfg.combo_step * (cfg.combo_floor + res.rarete);
-    S.mult = Math.min(cfg.mult_max, S.mult + gain);
+    // le rang monte selon la QUALITÉ du hop (pondéré rareté) -> qualité > longueur
+    addFill(FILL_STEP * (FILL_FLOOR + res.rarete));
     S.gauge = 1;                             // recharge pleine
     S.hops += 1;
-    renderMult("grow");
-  } else {                                   // weak
+  } else {                                   // weak : petit remplissage seulement
+    addFill(FILL_WEAK);
     S.gauge = Math.max(S.gauge, cfg.weak_refill);
     S.weakHops += 1;
   }
