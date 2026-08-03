@@ -148,6 +148,20 @@ body {
         box-shadow: 0 0 14px var(--bail); }
 }
 
+/* --- Bande CIBLE (mot à atteindre) ---------------------------------------- */
+.cible { margin-bottom: 14px; border: 1px solid var(--line); border-radius: 12px;
+  padding: 10px 14px; background: var(--bg2); }
+.cible-head { font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--muted); font-weight: 700; margin-bottom: 6px; }
+.cible-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.cible-word { font-size: 26px; font-weight: 900; color: var(--cool); letter-spacing: -.01em; }
+.cible-bonus { font-size: 16px; font-weight: 900; color: var(--push); }
+.cible.captured { animation: cibleflash .6s ease-out; }
+@keyframes cibleflash {
+  0% { background: var(--cool); transform: scale(1.04); }
+  100% { background: var(--bg2); transform: scale(1); }
+}
+
 /* --- Juice "mot rare" : glow doré + gerbe d'étincelles -------------------- */
 .current .word.rareglow { animation: rareGlow .85s ease-out; }
 @keyframes rareGlow {

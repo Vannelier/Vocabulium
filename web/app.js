@@ -23,6 +23,7 @@ const el = {
   menu: $("menu"), start: $("start"), play: $("play"),
   forbidLetters: $("forbidLetters"), forbidNext: $("forbidNext"),
   recordbeat: $("recordbeat"), endrecord: $("endrecord"),
+  cible: $("cible"), cibleWord: $("cibleWord"), cibleBonus: $("cibleBonus"),
 };
 
 let cfg = {
@@ -38,6 +39,7 @@ const S = {
   gauge: 1, lastFrame: 0, hops: 0, weakHops: 0, misses: 0, bestBridge: null,
   forbiddenOrder: [], wordCount: 0, zonesPlayed: [],
   best: 0, recordBeaten: false,
+  target: null, targetBonus: 0, captures: 0,
 };
 
 const BEST_KEY = "Vocabulium_best";
@@ -82,6 +84,7 @@ async function prepareRun() {
     started: false, running: false, gauge: 1, lastFrame: 0,
     hops: 0, weakHops: 0, misses: 0, bestBridge: null, wordCount: 0,
     zonesPlayed: [], best: loadBest(), recordBeaten: false,
+    target: null, targetBonus: 0, captures: 0,
   });
   el.trail.innerHTML = "";
   el.current.textContent = seedWord;
@@ -95,7 +98,8 @@ async function prepareRun() {
   renderGate(null);
   setBars(0, 0, true);
   renderHud();
-  renderRank();
+  renderRank(true);
+  await fetchTarget();     // cible initiale (fetchTarget rend aussi la bande + les lettres)
   renderForbidden();
 }
 
@@ -138,16 +142,25 @@ function recordFlash() {
 // --- Rang : la lettre-jauge. `S.mult` reste le MIROIR de RANK_MULT[rankIndex]
 // pour ne rien changer à la ligne de scoring (gained = hop_points * S.mult).
 function syncMult() { S.mult = RANK_MULT[S.rankIndex]; }
-function renderRank() {
+// instant=true : coupe la transition du remplissage (changement de lettre) ;
+// sinon le remplissage GLISSE jusqu'à sa nouvelle valeur.
+function renderRank(instant) {
   const i = S.rankIndex, col = RANK_COLOR[i];
   el.rankltr.dataset.l = RANK_NAMES[i];
   el.rankltr.textContent = RANK_NAMES[i];
   el.rank.style.setProperty("--rank-color", col);
-  el.rank.style.setProperty("--rank-fill",
-    (Math.max(0, Math.min(1, S.rankFill)) * 100).toFixed(1) + "%");
   el.mult.textContent = "×" + RANK_MULT[i].toFixed(2);
   el.mult.style.color = col;
-  el.rank.classList.toggle("hot", i >= 5);   // SS/SSS : pulse "en feu" (anim en Task 2)
+  el.rank.classList.toggle("hot", i >= 5);   // SS/SSS : pulse "en feu"
+  const pct = (Math.max(0, Math.min(1, S.rankFill)) * 100).toFixed(1) + "%";
+  if (instant) {
+    el.rank.classList.add("instant");
+    el.rank.style.setProperty("--rank-fill", pct);
+    void el.rankltr.offsetWidth;              // commit sans transition
+    el.rank.classList.remove("instant");
+  } else {
+    el.rank.style.setProperty("--rank-fill", pct);   // glisse (transition CSS)
+  }
 }
 // Relance une animation CSS (retire la classe, reflow, remet).
 function replay(elm, cls) { elm.classList.remove(cls); void elm.offsetWidth; elm.classList.add(cls); }
@@ -165,17 +178,17 @@ function addFill(amount) {
     S.rankFill = Math.max(0, S.rankFill - 1); S.rankIndex += 1; leveled = true; rankUp();
   }
   if (S.rankIndex >= RANK_NAMES.length - 1) S.rankFill = Math.min(S.rankFill, 1);
-  syncMult(); renderRank();
+  syncMult(); renderRank(leveled);            // glisse si pas de rang-up ; instantané sinon
   if (!leveled) replay(el.rankltr, "bump");   // pas de rang-up : simple rebond
 }
 function rankDown() {
   if (S.rankIndex > 0) { S.rankIndex -= 1; S.rankFill = DROP_FILL; }
   else S.rankFill = 0;                        // déjà à D : on vide, sans descendre
-  syncMult(); renderRank();
+  syncMult(); renderRank(true);
   replay(el.rankltr, "crack"); screenShake("s");
 }
 function shatter() {
-  S.rankIndex = 0; S.rankFill = 0; syncMult(); renderRank();
+  S.rankIndex = 0; S.rankFill = 0; syncMult(); renderRank(true);
   replay(el.rankltr, "shatter"); screenShake("l");
 }
 
@@ -320,8 +333,34 @@ function blinkUnchanged() {
   el.current.classList.add("samehold");
 }
 
+// Lettres (repliées, dédupliquées) de la cible — jamais interdites.
+function targetLetters() {
+  return S.target ? [...new Set([...S.target].map(Letters.fold))] : [];
+}
 function activeForbidden() {
-  return Letters.activeForbidden(S.forbiddenOrder, S.wordCount, LETTER_EVERY, START_FORBIDDEN);
+  return Letters.activeForbidden(S.forbiddenOrder, S.wordCount, LETTER_EVERY,
+                                 START_FORBIDDEN, targetLetters());
+}
+function renderTarget() {
+  if (!S.target) { el.cible.style.display = "none"; return; }
+  el.cible.style.display = "";
+  el.cibleWord.textContent = S.target;
+  el.cibleBonus.textContent = "+" + S.targetBonus;
+}
+// Tire une nouvelle cible : rare, sans lettre interdite active, pas déjà jouée.
+async function fetchTarget() {
+  const avoid = activeForbidden().join("");
+  for (let tries = 0; tries < 4; tries++) {
+    let r;
+    try {
+      r = await fetch(`/api/target?current=${encodeURIComponent(S.current)}`
+        + `&avoid=${avoid}&captures=${S.captures}`).then((x) => x.json());
+    } catch (e) { return; }
+    if (!r.word) { S.target = null; break; }
+    if (!S.played.has(r.word)) { S.target = r.word; S.targetBonus = r.bonus_base; break; }
+  }
+  renderTarget();
+  renderForbidden();   // la protection dépend de la cible -> re-render
 }
 
 function renderForbidden() {
@@ -443,6 +482,16 @@ async function submitHop() {
   }
   el.gauge.style.transform = `scaleX(${S.gauge})`;
 
+  let captureBonus = 0;
+  if (res.word === S.target) {                   // CAPTURE : mot cible exact & accepté
+    captureBonus = Math.round(S.targetBonus * S.mult);   // × rang courant
+    S.score += captureBonus;
+    S.captures += 1;
+    el.cible.classList.remove("captured"); void el.cible.offsetWidth;
+    el.cible.classList.add("captured");
+    await fetchTarget();                          // nouvelle cible (plus rare) + re-render protection
+  }
+
   const hot = res.zone === "strong" && res.rarete >= 0.55;
   if (res.zone === "strong" && (!S.bestBridge || gained > S.bestBridge.points))
     S.bestBridge = { word: res.word, points: gained };
@@ -454,6 +503,7 @@ async function submitHop() {
   renderHud();
   if (!el.pnum.classList.contains("record")) replay(el.pnum, "pop");
   maybeRecord();
+  if (captureBonus) toastScore(captureBonus, "", 1);   // le toast capture prime sur celui du hop
 }
 
 function endRun() {

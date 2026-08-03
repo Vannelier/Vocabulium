@@ -34,21 +34,16 @@
     return ch.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase();
   }
 
-  // RAMPE D'IMPACT. Bannir une lettre doit VRAIMENT gêner : pondérer par rareté
-  // (w, k, z d'abord) ne contraignait rien — ces lettres n'apparaissent quasi
-  // jamais. On tire donc par PALIERS d'impact croissant :
-  //   1. consonnes courantes mais contournables -> mordent dès la 1re interdiction
-  //   2. voyelles (hors e) + consonnes moyennes -> plus dur
-  //   3. « e » -> la pire, réservée aux paliers profonds
-  //   4. lettres rares -> impact quasi nul, reléguées à la toute fin (jamais gaspillées tôt)
-  // L'ordre est mélangé DANS chaque palier (variété entre parties), de façon
-  // déterministe en daily (même `rand`). i-ème lettre interdite = ordre[i].
-  const TIERS = [
-    ["s", "r", "t", "n", "l", "m", "d", "p", "c"],
-    ["a", "i", "o", "u", "v", "g", "b", "f", "h"],
-    ["e"],
-    ["q", "j", "x", "y", "z", "k", "w"],
-  ];
+  // ORDRE DES LETTRES INTERDITES : de l'aléatoire, mais dosé au début pour que ça
+  // morde sans être brutal. Toujours partir des consonnes courantes (R…) faisait
+  // trop mal d'entrée. Schéma :
+  //   ban 1 & 2 : MID (milieu de gamme) -> contrainte réelle mais contournable
+  //   ban 3     : FRÉQUENTE (RSTAE + i/n) -> ça commence à piquer
+  //   ban 4+    : full random du reste (les rares w/x/z tombent ici, jamais tôt)
+  // MID exclut volontairement les très fréquentes (RSTAE…) ET les rares (x/w/z…).
+  // Mélange déterministe en daily (même `rand`). i-ème lettre interdite = ordre[i].
+  const MID = ["o", "u", "l", "d", "c", "p", "m", "v", "g", "b", "f", "h"];
+  const FREQUENT = ["e", "a", "s", "r", "t", "i", "n"];
   function shuffle(arr, rand) {
     const a = arr.slice();
     for (let i = a.length - 1; i > 0; i--) {
@@ -58,7 +53,12 @@
     return a;
   }
   function drawOrder(rand) {
-    return TIERS.reduce((order, tier) => order.concat(shuffle(tier, rand)), []);
+    const mid = shuffle(MID, rand);
+    const freq = shuffle(FREQUENT, rand);
+    const order = [mid[0], mid[1], freq[0]];        // 2 MID puis 1 FRÉQUENTE
+    const used = new Set(order);
+    const rest = shuffle(ALPHABET.filter((L) => !used.has(L)), rand);   // full random ensuite
+    return order.concat(rest);
   }
 
   // Nb de lettres interdites après `words` mots : `start` dès le départ, +1 tous les `every`.
@@ -66,9 +66,13 @@
     return start + Math.floor(words / every);
   }
 
-  // Les lettres interdites actives = les `forbiddenCount` premières de l'ordre.
-  function activeForbidden(order, words, every, start = 0) {
-    return order.slice(0, forbiddenCount(words, every, start));
+  // Lettres interdites actives = les `forbiddenCount` premières de l'ordre, en
+  // SAUTANT celles de la cible (jamais interdites). On maintient le compteur en
+  // puisant plus loin dans l'ordre.
+  function activeForbidden(order, words, every, start = 0, targetLetters = []) {
+    const skip = new Set(targetLetters);
+    const avail = skip.size ? order.filter((L) => !skip.has(L)) : order;
+    return avail.slice(0, forbiddenCount(words, every, start));
   }
 
   // Quelles lettres interdites (parmi `active`) apparaissent dans `word` (accents repliés).

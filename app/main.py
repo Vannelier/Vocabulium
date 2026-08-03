@@ -19,7 +19,7 @@ from pydantic import BaseModel
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import constants as C
 from app.db import Vocab
-from app.scoring import score_hop, same_root, same_lemma
+from app.scoring import score_hop, same_root, same_lemma, rarete
 from app.seed import daily_seed, random_seed
 
 app = FastAPI(title="Vocabulium")
@@ -84,6 +84,17 @@ def get_neighbors(word: str):
     if canon is None:
         raise HTTPException(404, f"mot inconnu: {word}")
     return {"word": canon, "neighbors": db.top_neighbors(canon)}
+
+
+@app.get("/api/target")
+def get_target(current: str, avoid: str = "", captures: int = 0):
+    """Mot cible (waypoint) : rare, sans lettre interdite active, non immédiat."""
+    w = db.pick_target(current, avoid, captures)
+    if not w:
+        return {"word": None}
+    z = db.zipf(w)
+    bonus = C.TARGET_BASE + round(C.TARGET_RARE_W * rarete(z))
+    return {"word": w, "zipf": round(z, 3), "bonus_base": bonus}
 
 
 @app.get("/")

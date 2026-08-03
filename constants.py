@@ -183,3 +183,10 @@ SEED_STOPLIST = {
     # auxiliaires / semi-vides très courants
     "etre", "avoir", "ceux",
 }
+
+# --- Mot cible (waypoint) ---------------------------------------------------
+# Bonus d'une capture = TARGET_BASE + round(TARGET_RARE_W * rarete(cible)).
+# La cible devient de plus en plus rare à chaque capture (bande de zipf qui
+# descend), donc le bonus monte. Le bonus est ensuite multiplié par le rang.
+TARGET_BASE = 200
+TARGET_RARE_W = 800
