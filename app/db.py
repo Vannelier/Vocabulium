@@ -140,3 +140,26 @@ class Vocab:
 
     def seed_pool(self) -> list[str]:
         return self._seed_pool
+
+    def pick_target(self, current: str, avoid: str, captures: int) -> str | None:
+        """Choisit un MOT CIBLE : rare (bande de zipf qui descend avec `captures`),
+        SANS aucune lettre de `avoid` (interdites actives), != mot courant, et PAS
+        immédiatement jouable depuis `current` (prox < TAU_GRACE) pour forcer un vrai
+        chemin de plusieurs hops (sinon capture triviale)."""
+        import random
+        avoid_set = set(avoid)
+        cur = self.canonical(current)
+        cur_vec = self._M[self._words[cur]] if cur in self._words else None
+        z_hi = max(C.ZIPF_MIN + 0.6, 4.8 - 0.5 * captures)
+        z_lo = z_hi - 0.6
+        cand = [w for w in self._id2word
+                if z_lo <= self._zipf[w] <= z_hi
+                and w != cur
+                and not (avoid_set & set(fold(w)))]
+        random.shuffle(cand)
+        for w in cand:
+            if cur_vec is None:
+                return w
+            if float(self._M[self._words[w]] @ cur_vec) < C.TAU_GRACE:
+                return w
+        return cand[0] if cand else None
