@@ -482,6 +482,16 @@ async function submitHop() {
   }
   el.gauge.style.transform = `scaleX(${S.gauge})`;
 
+  let captureBonus = 0;
+  if (res.word === S.target) {                   // CAPTURE : mot cible exact & accepté
+    captureBonus = Math.round(S.targetBonus * S.mult);   // × rang courant
+    S.score += captureBonus;
+    S.captures += 1;
+    el.cible.classList.remove("captured"); void el.cible.offsetWidth;
+    el.cible.classList.add("captured");
+    await fetchTarget();                          // nouvelle cible (plus rare) + re-render protection
+  }
+
   const hot = res.zone === "strong" && res.rarete >= 0.55;
   if (res.zone === "strong" && (!S.bestBridge || gained > S.bestBridge.points))
     S.bestBridge = { word: res.word, points: gained };
@@ -493,6 +503,7 @@ async function submitHop() {
   renderHud();
   if (!el.pnum.classList.contains("record")) replay(el.pnum, "pop");
   maybeRecord();
+  if (captureBonus) toastScore(captureBonus, "", 1);   // le toast capture prime sur celui du hop
 }
 
 function endRun() {
