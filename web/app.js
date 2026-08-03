@@ -483,8 +483,8 @@ async function submitHop() {
   el.gauge.style.transform = `scaleX(${S.gauge})`;
 
   let captureBonus = 0;
-  if (res.word === S.target) {                   // CAPTURE : mot cible exact & accepté
-    captureBonus = Math.round(S.targetBonus * S.mult);   // × rang courant
+  if (res.word === S.target) {                   // CAPTURE : mot bonus exact & accepté
+    captureBonus = S.targetBonus;                // fixe et prédictible, EN PLUS des points du mot
     S.score += captureBonus;
     S.captures += 1;
     el.cible.classList.remove("captured"); void el.cible.offsetWidth;

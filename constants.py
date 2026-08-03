@@ -185,8 +185,8 @@ SEED_STOPLIST = {
 }
 
 # --- Mot cible (waypoint) ---------------------------------------------------
-# Bonus d'une capture = TARGET_BASE + round(TARGET_RARE_W * rarete(cible)).
-# La cible devient de plus en plus rare à chaque capture (bande de zipf qui
-# descend), donc le bonus monte. Le bonus est ensuite multiplié par le rang.
-TARGET_BASE = 200
-TARGET_RARE_W = 800
+# Bonus d'une capture : montants RONDS par palier de rareté, FIXE et prédictible
+# (PAS × rang), en PLUS des points du mot. La cible devient de plus en plus rare
+# à chaque capture, donc le palier monte.
+TARGET_BONUS_TIERS = [300, 400, 500, 600]     # rareté croissante
+TARGET_BONUS_CUTS = [0.35, 0.55, 0.75]        # seuils de rarete entre les paliers
