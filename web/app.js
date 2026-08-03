@@ -23,6 +23,7 @@ const el = {
   menu: $("menu"), start: $("start"), play: $("play"),
   forbidLetters: $("forbidLetters"), forbidNext: $("forbidNext"),
   recordbeat: $("recordbeat"), endrecord: $("endrecord"),
+  cible: $("cible"), cibleWord: $("cibleWord"), cibleBonus: $("cibleBonus"),
 };
 
 let cfg = {
@@ -38,6 +39,7 @@ const S = {
   gauge: 1, lastFrame: 0, hops: 0, weakHops: 0, misses: 0, bestBridge: null,
   forbiddenOrder: [], wordCount: 0, zonesPlayed: [],
   best: 0, recordBeaten: false,
+  target: null, targetBonus: 0, captures: 0,
 };
 
 const BEST_KEY = "Vocabulium_best";
@@ -82,6 +84,7 @@ async function prepareRun() {
     started: false, running: false, gauge: 1, lastFrame: 0,
     hops: 0, weakHops: 0, misses: 0, bestBridge: null, wordCount: 0,
     zonesPlayed: [], best: loadBest(), recordBeaten: false,
+    target: null, targetBonus: 0, captures: 0,
   });
   el.trail.innerHTML = "";
   el.current.textContent = seedWord;
@@ -96,6 +99,7 @@ async function prepareRun() {
   setBars(0, 0, true);
   renderHud();
   renderRank(true);
+  await fetchTarget();     // cible initiale (fetchTarget rend aussi la bande + les lettres)
   renderForbidden();
 }
 
@@ -329,8 +333,34 @@ function blinkUnchanged() {
   el.current.classList.add("samehold");
 }
 
+// Lettres (repliées, dédupliquées) de la cible — jamais interdites.
+function targetLetters() {
+  return S.target ? [...new Set([...S.target].map(Letters.fold))] : [];
+}
 function activeForbidden() {
-  return Letters.activeForbidden(S.forbiddenOrder, S.wordCount, LETTER_EVERY, START_FORBIDDEN);
+  return Letters.activeForbidden(S.forbiddenOrder, S.wordCount, LETTER_EVERY,
+                                 START_FORBIDDEN, targetLetters());
+}
+function renderTarget() {
+  if (!S.target) { el.cible.style.display = "none"; return; }
+  el.cible.style.display = "";
+  el.cibleWord.textContent = S.target;
+  el.cibleBonus.textContent = "+" + S.targetBonus;
+}
+// Tire une nouvelle cible : rare, sans lettre interdite active, pas déjà jouée.
+async function fetchTarget() {
+  const avoid = activeForbidden().join("");
+  for (let tries = 0; tries < 4; tries++) {
+    let r;
+    try {
+      r = await fetch(`/api/target?current=${encodeURIComponent(S.current)}`
+        + `&avoid=${avoid}&captures=${S.captures}`).then((x) => x.json());
+    } catch (e) { return; }
+    if (!r.word) { S.target = null; break; }
+    if (!S.played.has(r.word)) { S.target = r.word; S.targetBonus = r.bonus_base; break; }
+  }
+  renderTarget();
+  renderForbidden();   // la protection dépend de la cible -> re-render
 }
 
 function renderForbidden() {
