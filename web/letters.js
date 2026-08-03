@@ -66,9 +66,13 @@
     return start + Math.floor(words / every);
   }
 
-  // Les lettres interdites actives = les `forbiddenCount` premières de l'ordre.
-  function activeForbidden(order, words, every, start = 0) {
-    return order.slice(0, forbiddenCount(words, every, start));
+  // Lettres interdites actives = les `forbiddenCount` premières de l'ordre, en
+  // SAUTANT celles de la cible (jamais interdites). On maintient le compteur en
+  // puisant plus loin dans l'ordre.
+  function activeForbidden(order, words, every, start = 0, targetLetters = []) {
+    const skip = new Set(targetLetters);
+    const avail = skip.size ? order.filter((L) => !skip.has(L)) : order;
+    return avail.slice(0, forbiddenCount(words, every, start));
   }
 
   // Quelles lettres interdites (parmi `active`) apparaissent dans `word` (accents repliés).
