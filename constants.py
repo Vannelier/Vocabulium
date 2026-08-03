@@ -30,7 +30,7 @@ FASTTEXT_KV = DISCOVERIX_ROOT / "data" / "fasttext" / "cc.fr.300.2M.kv"
 # VOCAB_ZIPF_MIN est LE curseur couverture/bruit : plus bas = plus de mots rares
 # (et un peu de scories), plus haut = plus propre. Changement = redémarrer, pas
 # de rebuild.
-VOCAB_ZIPF_MIN = 2.0     # >= 2.0 -> ~83k mots (inclut royalisme à 2.13)
+VOCAB_ZIPF_MIN = 1.5     # >= 1.5 -> ~118k mots (inclut protistes 1.64, triglycérides 2.34)
 KV_SCAN = 600000         # on scanne le top-600k du modèle (freq-ordonné) ; au-delà zipf<2
 MIN_WORD_LEN = 3         # on écarte les mots-outils courts (de, la, un…) et les ~340 scories de 2 lettres
 
