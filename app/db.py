@@ -164,10 +164,22 @@ class Vocab:
                 and len(w) <= 12                       # reste lisible/tapable dans le HUD
                 and fold(w) not in self._seed_excluded  # vulgarité/mots-outils/abrév/prénoms
                 and not (avoid_set & set(fold(w)))]
-        random.shuffle(cand)
-        for w in cand:
-            if cur_vec is None:
-                return w
-            if float(self._M[self._words[w]] @ cur_vec) < C.TAU_GRACE:
-                return w
-        return cand[0] if cand else None
+        if not cand:
+            return None
+        if cur_vec is None:
+            return random.choice(cand)
+        # Proximités de tous les candidats d'un coup (produit matrice-vecteur).
+        idx = [self._words[w] for w in cand]
+        sims = self._M[np.asarray(idx)] @ cur_vec
+        # Zone ATTEIGNABLE : proche mais pas adjacent (pas jouable au 1er coup).
+        band = [(cand[i], float(sims[i])) for i in range(len(cand))
+                if C.TARGET_PROX_MIN <= sims[i] < C.TAU_GRACE]
+        if band:
+            band.sort(key=lambda t: -t[1])     # les plus LIÉS d'abord -> waypoint crédible
+            return random.choice(band[:8])[0]  # un peu de variété parmi les 8 meilleurs
+        # Repli : n'importe quelle cible non immédiate (la plus liée possible).
+        far = [(cand[i], float(sims[i])) for i in range(len(cand)) if sims[i] < C.TAU_GRACE]
+        if far:
+            far.sort(key=lambda t: -t[1])
+            return far[0][0]
+        return cand[0]

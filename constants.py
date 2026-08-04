@@ -56,9 +56,13 @@ REF_SIZE = 30000         # matrice de référence (top mots) pour le degré/spé
 # >= SYNO           : FAIBLE "trop proche"(quasi-synonyme : peu de points, combo figé)
 TAU_GRACE = 0.27        # plancher de REJET, très légèrement assoupli : sein~pancréas (0.278)
 #                         passe en faible, mais être~manger (0.265) reste rejeté. Fenêtre étroite.
-TAU = 0.38              # le FORT (plein score) démarre plus haut : les liens moyens (0.27–0.38)
-#                         ne décrochent plus le plein score, juste des points faibles.
-SYNO = 0.62              # au-delà : quasi-synonyme (royaliste~royalistes 0.74, chat~chats 0.74)
+TAU = 0.34              # le FORT (plein score) démarre à 0.34 : les bons ponts thématiques
+#                         (chat->griffe 0.34, feu->pompier 0.35, jardin->fleur 0.38) sont enfin
+#                         récompensés au lieu de tomber en « faible ». En dessous : points faibles.
+SYNO = 0.78              # au-delà : VRAI quasi-synonyme. 0.62 pénalisait à tort les associations
+#                         les plus naturelles (chat~chien 0.73, père~mère 0.74, roi~reine 0.63),
+#                         que l'embedding rapproche fort mais qui sont d'excellents ponts. À 0.78,
+#                         seuls les synonymes serrés (joli~beau 0.83, débuter~commencer 0.82) restent bridés.
 WEAK_POINTS_FACTOR = 0.35  # un hop faible rapporte ~1/3 d'un hop fort équivalent
 
 # Anti-dérivation : un mot qui partage une racine avec le précédent
@@ -241,3 +245,9 @@ SEED_NAMES = {
 # à chaque capture, donc le palier monte.
 TARGET_BONUS_TIERS = [300, 400, 500, 600]     # rareté croissante
 TARGET_BONUS_CUTS = [0.35, 0.55, 0.75]        # seuils de rarete entre les paliers
+
+# La cible doit être ATTEIGNABLE : ni jouable au 1er coup (prox >= TAU_GRACE -> écartée),
+# ni perdue dans l'espace sémantique. On vise une cible « proche mais pas adjacente »
+# (prox dans [TARGET_PROX_MIN, TAU_GRACE[), soit ~2 hops. Sinon on retombe sur n'importe
+# quelle cible non immédiate (< TAU_GRACE).
+TARGET_PROX_MIN = 0.15
