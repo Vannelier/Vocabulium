@@ -9,6 +9,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css?v=47">
+  <!-- AdSense : loader officiel (nécessaire à la validation Google + au CMP RGPD). -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7933464491322369"
+          crossorigin="anonymous"></script>
 </head>
 <body>
   <div id="app">
@@ -75,7 +78,12 @@
       <button id="playDaily">Mot du jour</button>
       <button id="play">Mot aléatoire</button>
     </div>
-    <div class="adslot adslot-start" id="adStart"><!-- AdSense (départ) : coller ici le <ins class="adsbygoogle">. JAMAIS près de la saisie/boutons de jeu. --></div>
+    <div class="adslot adslot-start" id="adStart">
+      <!-- Unité AdSense (départ). Le client/slot sont injectés par ads.js. -->
+      <ins class="adsbygoogle" style="display:block;width:100%" data-unit="adStart"
+           data-ad-format="auto" data-full-width-responsive="true"></ins>
+    </div>
+    <div class="legal"><a href="/confidentialite.html">Confidentialité</a></div>
   </div>
 
   <div class="end" id="end">
@@ -88,10 +96,16 @@
       <button id="share">Partager</button>
       <button id="menu">Menu</button>
     </div>
-    <div class="adslot adslot-end" id="adEnd"><!-- AdSense (fin) : coller ici le <ins class="adsbygoogle">. JAMAIS près de la saisie/boutons de jeu. --></div>
+    <div class="adslot adslot-end" id="adEnd">
+      <!-- Unité AdSense (fin). Le client/slot sont injectés par ads.js. -->
+      <ins class="adsbygoogle" style="display:block;width:100%" data-unit="adEnd"
+           data-ad-format="auto" data-full-width-responsive="true"></ins>
+    </div>
+    <div class="legal"><a href="/confidentialite.html">Confidentialité</a></div>
   </div>
 
   <script src="/letters.js?v=46"></script>
   <script src="/app.js?v=48"></script>
+  <script src="/ads.js?v=2"></script>
 </body>
 </html>

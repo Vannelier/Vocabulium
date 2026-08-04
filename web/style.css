@@ -411,6 +411,12 @@ body::after {
 .endbtns { display: flex; gap: 14px; margin-top: 20px; flex-wrap: wrap; justify-content: center; }
 .adslot { margin-top: 20px; min-height: 90px; width: 100%; max-width: 336px;
   display: flex; align-items: center; justify-content: center; }
+/* Tant qu'aucune pub n'est chargée, on n'affiche pas de cadre vide. */
+.adslot:has(ins:not([data-loaded])) { margin-top: 0; min-height: 0; }
+.legal { margin-top: 14px; font-size: 11px; }
+.legal a { color: var(--muted); opacity: .7; text-decoration: none;
+  letter-spacing: .02em; }
+.legal a:hover { opacity: 1; color: var(--cyan); }
 
 /* --- Mobile : tout tient sans scroll, saisie ancrée au-dessus du clavier ---
    #app = colonne pleine hauteur (100dvh, réduite avec le clavier grâce à
