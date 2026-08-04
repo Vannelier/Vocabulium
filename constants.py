@@ -185,6 +185,23 @@ SEED_STOPLIST = {
     # abréviations (ne sont pas de vrais mots -> mauvais seed : oct, nov…)
     "oct", "nov", "dec", "jan", "janv", "fev", "fevr", "avr", "juil", "sep",
     "etc", "ref", "fig", "chap", "num", "km", "kg", "cm", "mm", "ml", "cl", "max",
+    # sigles / acronymes qui tombent dans la bande de fréquence (mauvais seeds)
+    "adn", "afp", "bbc", "bcp", "bmw", "cdi", "cgt", "chu", "cia", "cie", "com",
+    "dvd", "dut", "edf", "fbi", "gps", "hab", "inc", "ios", "mdr", "nba", "ong",
+    "onu", "pdf", "pdg", "pib", "pme", "psg", "rdv", "rer", "sdf", "sfr", "sms",
+    "svp", "tgv", "tva", "ump", "usa", "usb", "dom", "del", "dir",
+    # chiffres romains
+    "iii", "vii", "xiv", "xvi", "xxe",
+    # mots étrangers (surtout anglais) présents dans les textes FR
+    "and", "bad", "bay", "boy", "bye", "cam", "can", "cat", "day", "der", "die",
+    "end", "for", "fox", "get", "got", "hey", "hot", "low", "mac", "man", "may",
+    "men", "new", "now", "off", "old", "one", "out", "pen", "red", "see", "sir",
+    "sky", "sun", "the", "von", "was", "way", "who", "wow", "yes", "you", "und",
+    "los", "big",
+    # interjections / onomatopées
+    "bah", "bla", "euh", "han", "heu", "hum", "lol", "nan", "ouf", "hop",
+    # prénoms courts (mauvais point d'ancrage sémantique)
+    "ali", "ann", "ben", "bob", "dan", "ken", "kim", "leo", "luc", "roy", "tom",
 }
 
 # Prénoms — écartés du MOT DE DÉPART et du MOT BONUS (mauvais point d'ancrage

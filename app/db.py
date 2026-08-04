@@ -108,6 +108,9 @@ class Vocab:
             w for w in self._id2word
             if C.SEED_ZIPF_MIN <= self._zipf[w] <= C.SEED_ZIPF_MAX
             and fold(w) not in self._seed_excluded
+            # écarte les artefacts typographiques (ligatures ﬁ/ﬂ…) : on ne garde que
+            # les mots déjà en forme NFKC. « œil »/« œuf » (œ non décomposé) restent OK.
+            and w == unicodedata.normalize("NFKC", w)
         )
         self.vocab_size = len(self._id2word)
 
