@@ -24,6 +24,7 @@ const el = {
   forbidLetters: $("forbidLetters"), forbidNext: $("forbidNext"),
   recordbeat: $("recordbeat"), endrecord: $("endrecord"),
   cible: $("cible"), cibleWord: $("cibleWord"), cibleBonus: $("cibleBonus"),
+  hiscore: $("hiscore"),
 };
 
 let cfg = {
@@ -91,6 +92,7 @@ async function prepareRun() {
   el.guess.value = ""; el.guess.disabled = true;
   el.end.classList.remove("show");
   el.pnum.classList.remove("record");
+  el.hiscore.textContent = S.best;
   el.gauge.style.transform = "scaleX(1)";
   el.detail.className = "detail";
   el.dword.textContent = "—"; el.dpts.textContent = "";
@@ -119,6 +121,8 @@ function startRun() {
 // --- rendering --------------------------------------------------------------
 function renderHud() {
   el.pnum.textContent = Math.round(S.score);
+  // Une fois le record dépassé en jeu, le compteur du header grimpe avec le score.
+  if (S.recordBeaten) el.hiscore.textContent = Math.round(S.score);
 }
 
 // High score : dès que le score EN COURS dépasse le record précédent (>0), on le
@@ -137,6 +141,8 @@ function recordFlash() {
   el.recordbeat.classList.add("play");
   el.pnum.classList.remove("record"); void el.pnum.offsetWidth;
   el.pnum.classList.add("record");     // le nombre reste doré : on tient le record
+  el.hiscore.classList.remove("bump"); void el.hiscore.offsetWidth;
+  el.hiscore.classList.add("bump");    // le record du header tressaute au passage
 }
 
 // --- Rang : la lettre-jauge. `S.mult` reste le MIROIR de RANK_MULT[rankIndex]
@@ -516,6 +522,7 @@ function endRun() {
   const beaten = prev > 0 && score > prev;      // record existant battu ?
   const best = Math.max(prev, score);
   localStorage.setItem(BEST_KEY, String(best));
+  el.hiscore.textContent = best;
 
   el.endrecord.classList.remove("hit");
   if (beaten) {

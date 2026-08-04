@@ -54,9 +54,9 @@ REF_SIZE = 30000         # matrice de référence (top mots) pour le degré/spé
 # [GRACE, TAU[      : FAIBLE "trop loin"  (accepté, peu de points, combo figé)
 # [TAU, SYNO[       : FORT                (plein score + combo) ← la zone qui paie
 # >= SYNO           : FAIBLE "trop proche"(quasi-synonyme : peu de points, combo figé)
-TAU_GRACE = 0.30        # plancher de REJET resserré (« strict ») : sous 0.30 = trop loin -> rejet.
-#                         Avant 0.22, trop laxiste : être~manger (0.283) passait en faible.
-TAU = 0.38              # le FORT (plein score) démarre plus haut : les liens moyens (0.30–0.38)
+TAU_GRACE = 0.27        # plancher de REJET, très légèrement assoupli : sein~pancréas (0.278)
+#                         passe en faible, mais être~manger (0.265) reste rejeté. Fenêtre étroite.
+TAU = 0.38              # le FORT (plein score) démarre plus haut : les liens moyens (0.27–0.38)
 #                         ne décrochent plus le plein score, juste des points faibles.
 SYNO = 0.62              # au-delà : quasi-synonyme (royaliste~royalistes 0.74, chat~chats 0.74)
 WEAK_POINTS_FACTOR = 0.35  # un hop faible rapporte ~1/3 d'un hop fort équivalent
@@ -182,6 +182,40 @@ SEED_STOPLIST = {
     "auprès", "auquel",
     # auxiliaires / semi-vides très courants
     "etre", "avoir", "ceux",
+    # abréviations (ne sont pas de vrais mots -> mauvais seed : oct, nov…)
+    "oct", "nov", "dec", "jan", "janv", "fev", "fevr", "avr", "juil", "sep",
+    "etc", "ref", "fig", "chap", "num", "km", "kg", "cm", "mm", "ml", "cl", "max",
+}
+
+# Prénoms — écartés du MOT DE DÉPART et du MOT BONUS (mauvais point d'ancrage
+# sémantique). On NE liste PAS ceux qui sont aussi des noms communs (pierre, rose,
+# olivier, marc, jade, oscar, victoire…) : on les garde. Comparaison sans accents/casse.
+SEED_NAMES = {
+    # masculins
+    "jean", "paul", "jacques", "michel", "andre", "philippe", "rene", "louis",
+    "marcel", "henri", "georges", "roger", "robert", "bernard", "daniel", "claude",
+    "alain", "gerard", "christian", "patrick", "thierry", "pascal", "stephane",
+    "laurent", "frederic", "sebastien", "julien", "nicolas", "david", "cedric",
+    "jerome", "vincent", "guillaume", "franck", "fabrice", "bruno", "herve", "gilles",
+    "yves", "denis", "dominique", "raymond", "gaston", "lucien", "albert", "emile",
+    "fernand", "joseph", "antoine", "francois", "maxime", "lucas", "hugo", "enzo",
+    "nathan", "ethan", "mathis", "theo", "noah", "gabriel", "raphael", "arthur",
+    "adam", "jules", "aurelien", "damien", "romain", "florian", "quentin",
+    "baptiste", "mathieu", "matthieu", "kevin", "anthony", "jonathan", "alexandre",
+    "victor", "gaspard", "leon", "achille", "gustave", "eugene", "edmond",
+    # féminins
+    "marie", "jeanne", "anne", "francoise", "monique", "catherine", "nathalie",
+    "isabelle", "sylvie", "martine", "nicole", "veronique", "christine", "sandrine",
+    "valerie", "celine", "julie", "sophie", "stephanie", "caroline", "aurelie",
+    "emilie", "laetitia", "virginie", "audrey", "elodie", "melanie", "marion",
+    "laure", "alice", "manon", "lea", "chloe", "emma", "sarah", "laura",
+    "pauline", "oceane", "ines", "louise", "juliette", "clara", "zoe", "lucie",
+    "eva", "anais", "margot", "amelie", "delphine", "coralie", "morgane",
+    "helene", "brigitte", "colette", "germaine", "yvonne", "suzanne", "denise",
+    "genevieve", "madeleine", "adele", "agnes", "beatrice", "cecile",
+    # internationaux fréquents en texte FR
+    "freddy", "brian", "jason", "john", "mike", "peter", "michael", "james",
+    "william", "steven", "johnny", "jimmy", "tommy", "jack", "harry", "bobby",
 }
 
 # --- Mot cible (waypoint) ---------------------------------------------------

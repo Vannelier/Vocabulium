@@ -100,11 +100,14 @@ class Vocab:
         # Pool des mots de DÉPART : bande de fréquence moyenne-haute, moins les mots
         # vulgaires (fold pour matcher sans accents/casse). Ne touche pas au jeu :
         # le joueur peut toujours enchaîner ces mots, seul le seed est filtré.
-        excluded = {fold(w) for w in (C.SEED_BLOCKLIST | C.SEED_STOPLIST)}
+        # Exclusions communes au MOT DE DÉPART et au MOT BONUS : vulgarité,
+        # mots-outils, abréviations, prénoms.
+        self._seed_excluded = {fold(w) for w in
+                               (C.SEED_BLOCKLIST | C.SEED_STOPLIST | C.SEED_NAMES)}
         self._seed_pool = sorted(
             w for w in self._id2word
             if C.SEED_ZIPF_MIN <= self._zipf[w] <= C.SEED_ZIPF_MAX
-            and fold(w) not in excluded
+            and fold(w) not in self._seed_excluded
         )
         self.vocab_size = len(self._id2word)
 
@@ -156,6 +159,7 @@ class Vocab:
                 if z_lo <= self._zipf[w] <= z_hi
                 and w != cur
                 and len(w) <= 12                       # reste lisible/tapable dans le HUD
+                and fold(w) not in self._seed_excluded  # vulgarité/mots-outils/abrév/prénoms
                 and not (avoid_set & set(fold(w)))]
         random.shuffle(cand)
         for w in cand:
