@@ -54,7 +54,15 @@ const RARE_HI = 0.85;         // au-delà : juice renforcé "très rare"
 const RANK_NAMES = ["D", "C", "B", "A", "S", "SS", "SSS"];
 const RANK_MULT  = [1.0, 1.4, 1.8, 2.3, 3.0, 4.0, 5.5];
 const RANK_COLOR = ["#9385c4", "#20ffb2", "#22e6ff", "#b25cff", "#ffd23f", "#ff7a2f", "#ff2e5b"];
-const FILL_STEP = 0.55, FILL_FLOOR = 0.45, FILL_WEAK = 0.12, DROP_FILL = 0.30;
+// Remplissage du rang (le palier monte VITE). Un hop fort remplit selon sa
+// QUALITÉ = rareté + vitesse : amount = FILL_STEP * (FILL_FLOOR + rareté + FILL_SPEED*vitesse).
+// Un mot rare ET donné rapidement (rareté~1, vitesse~1) dépasse 1.0 -> prend un
+// palier entier d'un coup (le surplus est reporté par addFill).
+const FILL_STEP = 0.6, FILL_FLOOR = 0.5, FILL_SPEED = 0.6, FILL_WEAK = 0.12, DROP_FILL = 0.30;
+// Capture du mot bonus : remplit EN PLUS le rang, proportionnellement à la rareté
+// du bonus (300 -> ~0.45 palier, 600 -> ~0.9 palier). Le plus rare des bonus.
+const CAPTURE_FILL_MAX = 0.9, TARGET_BONUS_TOP = 600;
+const captureFill = (bonus) => CAPTURE_FILL_MAX * Math.min(1, bonus / TARGET_BONUS_TOP);
 
 const LETTER_EVERY = 5;           // une nouvelle lettre interdite tous les 5 mots
 const START_FORBIDDEN = 1;        // ... et 1 lettre déjà interdite dès le départ (tempo « nerveux »)
@@ -477,8 +485,9 @@ async function submitHop() {
   el.guess.value = "";
 
   if (res.zone === "strong") {
-    // le rang monte selon la QUALITÉ du hop (pondéré rareté) -> qualité > longueur
-    addFill(FILL_STEP * (FILL_FLOOR + res.rarete));
+    // le rang monte selon la QUALITÉ du hop (rareté + vitesse) -> qualité > longueur.
+    // Un mot rare donné vite peut franchir un palier d'un seul hop.
+    addFill(FILL_STEP * (FILL_FLOOR + res.rarete + FILL_SPEED * res.speed));
     S.gauge = 1;                             // recharge pleine
     S.hops += 1;
   } else {                                   // weak : petit remplissage seulement
@@ -492,6 +501,7 @@ async function submitHop() {
   if (res.word === S.target) {                   // CAPTURE : mot bonus exact & accepté
     captureBonus = S.targetBonus;                // fixe et prédictible, EN PLUS des points du mot
     S.score += captureBonus;
+    addFill(captureFill(S.targetBonus));         // ... et fait aussi grimper le palier
     S.captures += 1;
     el.cible.classList.remove("captured"); void el.cible.offsetWidth;
     el.cible.classList.add("captured");

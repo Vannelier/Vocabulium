@@ -105,7 +105,7 @@ MULT_MAX = 4.0           # plafond du multiplicateur
 # bon mot. Le run finit quand elle atteint 0. Le vrai risque du "push" : si elle
 # se vide avec du pending non encaissé, ce pending est PERDU (mets True pour
 # revenir à l'auto-encaissement doux de l'ancien MVP).
-GAUGE_SECONDS = 18.0       # temps de vidage complet (plein -> vide) sans action
+GAUGE_SECONDS = 27.0       # temps de vidage complet (plein -> vide) sans action — rallongé ×1.5 (feel plus « chill »)
 WEAK_REFILL = 0.62         # un hop faible remonte la jauge jusqu'à ce niveau max
 KEEP_PENDING_ON_TIMEOUT = False
 
