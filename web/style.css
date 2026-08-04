@@ -66,6 +66,20 @@ body::after {
 
 #app { position: relative; z-index: 1; width: min(720px, 94vw); padding: 20px; margin: auto 0; }
 
+/* --- Topbar : titre + record (mobile ET desktop) -------------------------- */
+.topbar { display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-bottom: 14px; }
+.topbar .brand { font-family: var(--pixel); font-size: 15px; letter-spacing: .02em;
+  color: var(--cyan);
+  text-shadow: 2px 0 0 rgba(255,46,151,.7), -2px 0 0 rgba(34,230,255,.35),
+               0 0 16px rgba(255,46,151,.5); }
+.topbar .hiscore { display: flex; align-items: baseline; gap: 8px; }
+.topbar .hs-label { font-family: var(--pixel); font-size: 8px; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--muted); }
+.topbar .hs-val { font-family: var(--pixel); font-size: 16px; color: var(--gold);
+  text-shadow: 0 0 12px rgba(255,210,63,.6); }
+.topbar .hs-val.bump { animation: scorepop .3s ease-out; }
+
 /* Cartes néon (panneaux) : bordure lumineuse + halo + reflet haut */
 .panel, .forbid, .detail {
   background:
@@ -398,19 +412,72 @@ body::after {
 .adslot { margin-top: 20px; min-height: 90px; width: 100%; max-width: 336px;
   display: flex; align-items: center; justify-content: center; }
 
-/* --- Mobile : garder l'essentiel au-dessus du clavier --------------------- */
+/* --- Mobile : tout tient sans scroll, saisie ancrée au-dessus du clavier ---
+   #app = colonne pleine hauteur (100dvh, réduite avec le clavier grâce à
+   interactive-widget=resizes-content). Le mot courant absorbe l'espace libre ;
+   les autres blocs sont compactés ; la saisie reste toujours en bas. --------- */
 @media (max-width: 560px) {
-  #app { padding: 12px; }
-  .current { margin: 4px 0 14px; }
-  .current .word { font-size: clamp(32px, 11vw, 52px); }
-  .stat .val { font-size: 24px; }
-  .rankltr { font-size: 38px; }
-  .rank .mult { font-size: 12px; }
-  .cible-word { font-size: 19px; }
-  #guess { font-size: 18px; padding: 13px 14px; }
-  .detail, .portal, .forbid { margin-bottom: 10px; }
-  .detail { min-height: 82px; }
+  body { overflow: hidden; height: 100dvh; align-items: stretch; }
+
+  #app { height: 100dvh; margin: 0; padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; gap: 0; }
+
+  /* Blocs fixes : ne grandissent pas, marges resserrées */
+  .topbar { flex: none; margin-bottom: 8px; }
+  .topbar .brand { font-size: 13px; }
+  .topbar .hs-val { font-size: 14px; }
+
+  .hud { flex: none; margin-bottom: 8px; gap: 10px; }
+  .stat .val { font-size: 22px; margin-top: 4px; }
+  .rank { margin-top: 3px; gap: 8px; }
+  .rankltr { font-size: 32px; }
+  .rank .mult { font-size: 11px; }
+  .cible-word { font-size: 18px; }
+
+  .timer { flex: none; margin-bottom: 8px; }
+
+  .forbid { flex: none; margin-bottom: 8px; padding: 8px 12px; }
+  .forbid-head { margin-bottom: 6px; }
+  .forbid-letters { gap: 6px; min-height: 30px; }
+  .forbid-letters .fl { width: 30px; height: 32px; font-size: 13px; }
+  .forbid-next { margin-top: 6px; }
+
+  /* Trail : une seule ligne, s'efface en premier quand ça manque de place */
+  .trail { flex: 0 1 auto; min-height: 0; max-height: 22px; margin-bottom: 6px; }
+
+  /* Mot courant : l'élément élastique qui absorbe l'espace restant */
+  .current { flex: 1 1 0; min-height: 40px; margin: 0 0 6px;
+    display: flex; align-items: center; justify-content: center; }
+  .current .word { font-size: clamp(30px, 10vw, 52px); }
+
+  /* Proximité : feedback live, toujours visible */
+  .portal { flex: none; margin-bottom: 6px; }
+
+  /* Détail : compact — les deux jauges passent côte à côte */
+  .detail { flex: none; margin-bottom: 6px; min-height: 0; padding: 8px 12px; }
+  .dhead { margin-bottom: 6px; }
+  .dhead #dword { font-size: 15px; }
+  .dhead .dpts { font-size: 14px; }
+  .scoregauges { flex-direction: row; gap: 12px; }
+  .scoregauges .sg { flex: 1; min-width: 0; }
+  .sg .sglabel { margin-bottom: 4px; }
+  .sg .sglabel b { font-size: 15px; }
+  .sgtrack { height: 10px; }
+
+  /* Saisie : ancrée en bas, jamais masquée */
+  .inrow { flex: none; margin-top: auto; }
+  #guess { font-size: 18px; padding: 12px 14px; }
+
   .beat .b2 { font-size: 38px; }
   .toast .big { font-size: 28px; }
   .endbtns button, #share { flex: 1; min-width: 128px; }
+}
+
+/* Très petits écrans en hauteur (clavier + petit device) : on gagne encore
+   quelques pixels en masquant le trail et en réduisant les libellés. */
+@media (max-width: 560px) and (max-height: 620px) {
+  .trail { display: none; }
+  .forbid-next { display: none; }
+  .plbl { display: none; }
+  .dhead { display: none; }
 }
