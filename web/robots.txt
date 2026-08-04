@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://vocabulium.fr/sitemap.xml
+Sitemap: https://www.vocabulium.fr/sitemap.xml
