@@ -187,6 +187,37 @@ SEED_STOPLIST = {
     "etc", "ref", "fig", "chap", "num", "km", "kg", "cm", "mm", "ml", "cl", "max",
 }
 
+# Prénoms — écartés du MOT DE DÉPART et du MOT BONUS (mauvais point d'ancrage
+# sémantique). On NE liste PAS ceux qui sont aussi des noms communs (pierre, rose,
+# olivier, marc, jade, oscar, victoire…) : on les garde. Comparaison sans accents/casse.
+SEED_NAMES = {
+    # masculins
+    "jean", "paul", "jacques", "michel", "andre", "philippe", "rene", "louis",
+    "marcel", "henri", "georges", "roger", "robert", "bernard", "daniel", "claude",
+    "alain", "gerard", "christian", "patrick", "thierry", "pascal", "stephane",
+    "laurent", "frederic", "sebastien", "julien", "nicolas", "david", "cedric",
+    "jerome", "vincent", "guillaume", "franck", "fabrice", "bruno", "herve", "gilles",
+    "yves", "denis", "dominique", "raymond", "gaston", "lucien", "albert", "emile",
+    "fernand", "joseph", "antoine", "francois", "maxime", "lucas", "hugo", "enzo",
+    "nathan", "ethan", "mathis", "theo", "noah", "gabriel", "raphael", "arthur",
+    "adam", "jules", "aurelien", "damien", "romain", "florian", "quentin",
+    "baptiste", "mathieu", "matthieu", "kevin", "anthony", "jonathan", "alexandre",
+    "victor", "gaspard", "leon", "achille", "gustave", "eugene", "edmond",
+    # féminins
+    "marie", "jeanne", "anne", "francoise", "monique", "catherine", "nathalie",
+    "isabelle", "sylvie", "martine", "nicole", "veronique", "christine", "sandrine",
+    "valerie", "celine", "julie", "sophie", "stephanie", "caroline", "aurelie",
+    "emilie", "laetitia", "virginie", "audrey", "elodie", "melanie", "marion",
+    "laure", "alice", "manon", "lea", "chloe", "emma", "sarah", "laura",
+    "pauline", "oceane", "ines", "louise", "juliette", "clara", "zoe", "lucie",
+    "eva", "anais", "margot", "amelie", "delphine", "coralie", "morgane",
+    "helene", "brigitte", "colette", "germaine", "yvonne", "suzanne", "denise",
+    "genevieve", "madeleine", "adele", "agnes", "beatrice", "cecile",
+    # internationaux fréquents en texte FR
+    "freddy", "brian", "jason", "john", "mike", "peter", "michael", "james",
+    "william", "steven", "johnny", "jimmy", "tommy", "jack", "harry", "bobby",
+}
+
 # --- Mot cible (waypoint) ---------------------------------------------------
 # Bonus d'une capture : montants RONDS par palier de rareté, FIXE et prédictible
 # (PAS × rang), en PLUS des points du mot. La cible devient de plus en plus rare
