@@ -54,9 +54,9 @@ REF_SIZE = 30000         # matrice de référence (top mots) pour le degré/spé
 # [GRACE, TAU[      : FAIBLE "trop loin"  (accepté, peu de points, combo figé)
 # [TAU, SYNO[       : FORT                (plein score + combo) ← la zone qui paie
 # >= SYNO           : FAIBLE "trop proche"(quasi-synonyme : peu de points, combo figé)
-TAU_GRACE = 0.30        # plancher de REJET resserré (« strict ») : sous 0.30 = trop loin -> rejet.
-#                         Avant 0.22, trop laxiste : être~manger (0.283) passait en faible.
-TAU = 0.38              # le FORT (plein score) démarre plus haut : les liens moyens (0.30–0.38)
+TAU_GRACE = 0.27        # plancher de REJET, très légèrement assoupli : sein~pancréas (0.278)
+#                         passe en faible, mais être~manger (0.265) reste rejeté. Fenêtre étroite.
+TAU = 0.38              # le FORT (plein score) démarre plus haut : les liens moyens (0.27–0.38)
 #                         ne décrochent plus le plein score, juste des points faibles.
 SYNO = 0.62              # au-delà : quasi-synonyme (royaliste~royalistes 0.74, chat~chats 0.74)
 WEAK_POINTS_FACTOR = 0.35  # un hop faible rapporte ~1/3 d'un hop fort équivalent
@@ -182,6 +182,9 @@ SEED_STOPLIST = {
     "auprès", "auquel",
     # auxiliaires / semi-vides très courants
     "etre", "avoir", "ceux",
+    # abréviations (ne sont pas de vrais mots -> mauvais seed : oct, nov…)
+    "oct", "nov", "dec", "jan", "janv", "fev", "fevr", "avr", "juil", "sep",
+    "etc", "ref", "fig", "chap", "num", "km", "kg", "cm", "mm", "ml", "cl", "max",
 }
 
 # --- Mot cible (waypoint) ---------------------------------------------------
