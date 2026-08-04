@@ -24,7 +24,7 @@ const el = {
   forbidLetters: $("forbidLetters"), forbidNext: $("forbidNext"),
   recordbeat: $("recordbeat"), endrecord: $("endrecord"),
   cible: $("cible"), cibleWord: $("cibleWord"), cibleBonus: $("cibleBonus"),
-  hiscore: $("hiscore"),
+  hiscore: $("hiscore"), brand: $("brand"), levelflash: $("levelflash"),
 };
 
 let cfg = {
@@ -65,7 +65,7 @@ const CAPTURE_FILL_MAX = 0.9, TARGET_BONUS_TOP = 600;
 const captureFill = (bonus) => CAPTURE_FILL_MAX * Math.min(1, bonus / TARGET_BONUS_TOP);
 
 const LETTER_EVERY = 5;           // une nouvelle lettre interdite tous les 5 mots
-const START_FORBIDDEN = 1;        // ... et 1 lettre déjà interdite dès le départ (tempo « nerveux »)
+const START_FORBIDDEN = 0;        // aucune lettre interdite au départ (la 1re arrive après LETTER_EVERY mots)
 const FIRST_GAUGE_FACTOR = 2.0;   // le 1er chrono dure 2× plus longtemps (le temps de comprendre)
 
 // --- init -------------------------------------------------------------------
@@ -183,7 +183,12 @@ function screenShake(kind) {              // "s" | "m" | "l"
   app.classList.remove("shake-s", "shake-m", "shake-l"); void app.offsetWidth; app.classList.add(c);
   setTimeout(() => app.classList.remove(c), 450);
 }
-function rankUp() { replay(el.rankltr, "slam"); screenShake("m"); }
+// Flash plein écran à la couleur du NOUVEAU rang : gros pop visuel au level-up.
+function flashLevel() {
+  el.levelflash.style.background = RANK_COLOR[S.rankIndex];
+  replay(el.levelflash, "play");
+}
+function rankUp() { replay(el.rankltr, "slam"); flashLevel(); screenShake("m"); }
 // Remplit la lettre ; déborde -> monte d'un rang (report du surplus). Plafonné à SSS.
 function addFill(amount) {
   let leveled = false;
@@ -601,9 +606,18 @@ async function startWith(mode) {
   await prepareRun();     // re-fetch le seed + re-tire les lettres selon le mode choisi
   startRun();
 }
-el.menu.addEventListener("click", () => {          // Menu : revient à l'écran des modes
+// Retour au menu : stoppe une partie en cours (le chrono s'arrête) et montre l'écran des modes.
+function goToMenu() {
+  S.running = false;
+  el.guess.disabled = true;
   el.end.classList.remove("show");
   el.start.classList.add("show");
+}
+el.menu.addEventListener("click", goToMenu);
+// Le titre "Vocabulium" du header ramène au menu (clic ou Entrée/Espace au clavier).
+el.brand.addEventListener("click", goToMenu);
+el.brand.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goToMenu(); }
 });
 
 // Au chargement : on prépare la partie et on montre l'écran "Jouer" (chrono à l'arrêt).

@@ -70,9 +70,23 @@ body::after {
 .topbar { display: flex; align-items: center; justify-content: space-between;
   gap: 12px; margin-bottom: 14px; }
 .topbar .brand { font-family: var(--pixel); font-size: 15px; letter-spacing: .02em;
-  color: var(--cyan);
+  color: var(--cyan); cursor: pointer; user-select: none;
   text-shadow: 2px 0 0 rgba(255,46,151,.7), -2px 0 0 rgba(34,230,255,.35),
-               0 0 16px rgba(255,46,151,.5); }
+               0 0 16px rgba(255,46,151,.5);
+  transition: transform .1s, filter .1s; }
+.topbar .brand:hover { filter: brightness(1.15); }
+.topbar .brand:active { transform: scale(.94); }
+
+/* Flash plein écran à la MONTÉE DE PALIER (couleur du nouveau rang, via JS) */
+.levelflash { position: fixed; inset: 0; z-index: 40; pointer-events: none;
+  opacity: 0; mix-blend-mode: screen; }
+.levelflash.play { animation: levelflash .4s ease-out; }
+@keyframes levelflash {
+  0%   { opacity: 0; }
+  9%   { opacity: .62; }
+  38%  { opacity: .22; }
+  100% { opacity: 0; }
+}
 .topbar .hiscore { display: flex; align-items: baseline; gap: 8px; }
 .topbar .hs-label { font-family: var(--pixel); font-size: 8px; letter-spacing: .06em;
   text-transform: uppercase; color: var(--muted); }

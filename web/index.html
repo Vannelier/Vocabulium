@@ -59,7 +59,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css?v=47">
+  <link rel="stylesheet" href="/style.css?v=49">
   <!-- AdSense : loader officiel (nécessaire à la validation Google + au CMP RGPD). -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7933464491322369"
           crossorigin="anonymous"></script>
@@ -67,7 +67,7 @@
 <body>
   <div id="app">
     <div class="topbar">
-      <div class="brand">Vocabulium</div>
+      <div class="brand" id="brand" role="button" tabindex="0" title="Retour au menu">Vocabulium</div>
       <div class="hiscore"><span class="hs-label">Record</span><span class="hs-val" id="hiscore">0</span></div>
     </div>
     <div class="hud">
@@ -118,6 +118,7 @@
     </div>
   </div>
 
+  <div class="levelflash" id="levelflash"></div>
   <div class="toast" id="toast"></div>
   <div class="beat" id="beat"></div>
   <div class="recordbeat" id="recordbeat"></div>
@@ -156,7 +157,7 @@
   </div>
 
   <script src="/letters.js?v=46"></script>
-  <script src="/app.js?v=48"></script>
+  <script src="/app.js?v=49"></script>
   <script src="/ads.js?v=3"></script>
 </body>
 </html>
