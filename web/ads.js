@@ -11,7 +11,7 @@
        aucune unité n'est poussée (rien ne s'affiche, aucune erreur). <<<
    ============================================================================= */
 const AD_CLIENT = "ca-pub-7933464491322369";
-const AD_SLOTS = { adStart: "0000000000", adEnd: "0000000000" };
+const AD_SLOTS = { adStart: "2852850427", adEnd: "7858031027" };
 
 (function () {
   const configured = (slot) => slot && !/^0+$/.test(slot);
