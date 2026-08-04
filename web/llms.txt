@@ -1,0 +1,17 @@
+# Vocabulium
+
+> Vocabulium est un jeu de mots en ligne, gratuit et sans inscription. On y enchaîne des mots liés par le sens (association sémantique), contre la montre, en évitant des lettres qui deviennent interdites au fil de la partie. Un « mot bonus » et un système de paliers récompensent les enchaînements rares et rapides.
+
+## Le jeu
+- [Jouer](https://vocabulium.fr/): page principale, modes « Mot du jour » (identique pour tous) et « Mot aléatoire ».
+
+## Fonctionnement
+- But: donner un mot en rapport avec le précédent et enchaîner la plus longue chaîne possible.
+- Proximité sémantique: chaque réponse doit tomber dans une zone ni trop proche (quasi-synonyme) ni trop loin du mot précédent.
+- Lettres interdites: certaines lettres deviennent interdites au fur et à mesure.
+- Mot bonus: un mot cible rare à attraper pour booster le score et faire monter le palier.
+- Score: dépend de la rareté du mot et de la vitesse; des paliers (D jusqu'à SSS) multiplient les points.
+
+## Divers
+- [Politique de confidentialité](https://vocabulium.fr/confidentialite.html)
+- Langue: français. Publicité via Google AdSense sur les écrans de départ et de fin uniquement.
