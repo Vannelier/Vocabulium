@@ -97,6 +97,44 @@ class Room:
     def active_forbidden(self) -> list[str]:
         return letters.active_forbidden(self.forbidden_order, self.word_count, LETTER_EVERY)
 
+    def _next_alive_index(self, start: int) -> int:
+        n = len(self.players)
+        for step in range(1, n + 1):
+            i = (start + step) % n
+            if self.players[i].alive:
+                return i
+        return start
+
+    def submit(self, pid: str, canonical_word: str, accepted: bool) -> dict:
+        """Applique un coup DÉJÀ validé côté proximité (`accepted`). Contrôle le
+        tour, la lettre interdite, l'anti-rejouage ; avance le tour + l'escalade."""
+        active = self.active_player()
+        if self.state != "playing" or active is None or active.id != pid:
+            return {"ok": False, "reason": "not_your_turn"}
+        if canonical_word in self.played:
+            return {"ok": False, "reason": "already_played"}
+        if letters.offending_letters(canonical_word, self.active_forbidden()):
+            return {"ok": False, "reason": "forbidden_letter"}
+        if not accepted:
+            return {"ok": False, "reason": "too_far"}
+
+        before = letters.forbidden_count(self.word_count, LETTER_EVERY)
+        self.played.add(canonical_word)
+        self.current_word = canonical_word
+        self.word_count += 1
+        after = letters.forbidden_count(self.word_count, LETTER_EVERY)
+        new_forbidden = self.active_forbidden()[after - 1] if after > before else None
+
+        self.active_index = self._next_alive_index(self.active_index)
+        return {
+            "ok": True,
+            "current": self.current_word,
+            "word_count": self.word_count,
+            "active": self.active_player().id,
+            "new_forbidden": new_forbidden,
+            "scored_by": pid,
+        }
+
 
 class RoomManager:
     def __init__(self) -> None:

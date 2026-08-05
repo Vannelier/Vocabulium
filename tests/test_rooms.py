@@ -100,3 +100,63 @@ def test_player_lookup_and_manager_drop():
     r = mgr.create()
     mgr.drop(r.code)
     assert mgr.get(r.code) is None
+
+
+def _playing_room():
+    room = Room(code="ROSE")
+    room.add_player("a"); room.add_player("b")
+    # ordre où 'z' est interdite dès 5 mots (pour tester le refus lettre)
+    room.start(seed_word="orage", forbidden_order=["z"] + [c for c in "abcdefghij"])
+    return room
+
+
+def test_submit_rejects_when_not_your_turn():
+    room = _playing_room()
+    b = room.players[1]
+    res = room.submit(b.id, "foudre", accepted=True)   # ce n'est pas le tour de b
+    assert res["ok"] is False and res["reason"] == "not_your_turn"
+
+
+def test_submit_accepted_advances_word_and_turn():
+    room = _playing_room()
+    a = room.players[0]
+    res = room.submit(a.id, "foudre", accepted=True)
+    assert res["ok"] is True
+    assert res["current"] == "foudre"
+    assert room.current_word == "foudre"
+    assert room.word_count == 1
+    assert "foudre" in room.played
+    assert res["active"] == room.players[1].id       # tour passé à b
+
+
+def test_submit_rejects_already_played():
+    room = _playing_room()
+    a = room.players[0]
+    res = room.submit(a.id, "orage", accepted=True)   # = seed, déjà joué
+    assert res["ok"] is False and res["reason"] == "already_played"
+
+
+def test_submit_rejects_too_far():
+    room = _playing_room()
+    a = room.players[0]
+    res = room.submit(a.id, "foudre", accepted=False)   # proximité insuffisante
+    assert res["ok"] is False and res["reason"] == "too_far"
+    assert room.word_count == 0                          # rien n'avance
+
+
+def test_submit_rejects_forbidden_letter():
+    # forcer 1 lettre interdite active ('z') : word_count doit être >=5.
+    room = _playing_room()
+    room.word_count = 5           # 1 lettre active = 'z' (1re de l'ordre)
+    a = room.active_player()
+    res = room.submit(a.id, "zebre", accepted=True)
+    assert res["ok"] is False and res["reason"] == "forbidden_letter"
+
+
+def test_submit_signals_new_forbidden_letter_on_escalation():
+    room = _playing_room()
+    a = room.players[0]
+    room.word_count = 4                       # le prochain mot accepté -> 5 -> escalade
+    res = room.submit(a.id, "foudre", accepted=True)
+    assert res["ok"] is True
+    assert res["new_forbidden"] == "z"        # 1re lettre de l'ordre devient active
