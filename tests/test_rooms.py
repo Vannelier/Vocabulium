@@ -50,3 +50,53 @@ def test_start_sets_playing_state_and_seed():
     assert room.current_word == "orage"
     assert "orage" in room.played
     assert room.active_player().name == "a"
+
+
+def test_remove_host_promotes_new_host():
+    room = Room(code="ROSE")
+    a = room.add_player("a"); b = room.add_player("b")
+    room.remove_player(a.id)
+    assert room.player(b.id).is_host is True
+
+
+def test_remove_player_before_active_keeps_same_active():
+    room = Room(code="ROSE")
+    a = room.add_player("a"); b = room.add_player("b"); c = room.add_player("c")
+    room.active_index = 2                 # c est actif
+    room.remove_player(a.id)              # on retire un joueur AVANT l'actif
+    assert room.active_player().id == c.id
+
+
+def test_remove_active_player_advances_to_next():
+    room = Room(code="ROSE")
+    a = room.add_player("a"); b = room.add_player("b"); c = room.add_player("c")
+    room.active_index = 1                 # b actif
+    room.remove_player(b.id)
+    assert room.active_player().id == c.id   # passe au suivant
+
+
+def test_remove_last_indexed_active_wraps_to_zero():
+    room = Room(code="ROSE")
+    a = room.add_player("a"); b = room.add_player("b"); c = room.add_player("c")
+    room.active_index = 2                 # c actif (dernier)
+    room.remove_player(c.id)
+    assert room.active_player().id == a.id
+
+
+def test_remove_unknown_player_is_noop():
+    room = Room(code="ROSE")
+    a = room.add_player("a")
+    room.remove_player("nope")
+    assert len(room.players) == 1
+
+
+def test_player_lookup_and_manager_drop():
+    from app.rooms import RoomManager
+    room = Room(code="ROSE")
+    a = room.add_player("a")
+    assert room.player(a.id) is a
+    assert room.player("nope") is None
+    mgr = RoomManager()
+    r = mgr.create()
+    mgr.drop(r.code)
+    assert mgr.get(r.code) is None

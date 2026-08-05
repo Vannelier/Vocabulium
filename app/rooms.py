@@ -56,7 +56,23 @@ class Room:
         return next((p for p in self.players if p.id == pid), None)
 
     def remove_player(self, pid: str) -> None:
-        self.players = [p for p in self.players if p.id != pid]
+        idx = next((i for i, p in enumerate(self.players) if p.id == pid), None)
+        if idx is None:
+            return
+        was_host = self.players[idx].is_host
+        self.players.pop(idx)
+        if not self.players:
+            self.active_index = 0
+            return
+        # garder active_index pointé sur le même joueur logique (ou le suivant si
+        # on a retiré le joueur actif) et jamais hors bornes
+        if idx < self.active_index:
+            self.active_index -= 1
+        if self.active_index >= len(self.players):
+            self.active_index = 0
+        # si on a retiré l'hôte, en promouvoir un nouveau (sinon salon bloqué)
+        if was_host and not any(p.is_host for p in self.players):
+            self.players[0].is_host = True
 
     def can_start(self) -> bool:
         return self.state == "lobby" and len(self.players) >= MIN_PLAYERS
