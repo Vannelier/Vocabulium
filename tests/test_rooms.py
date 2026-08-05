@@ -229,3 +229,40 @@ def test_last_survivor_ends_game():
     assert room.state == "over"
     assert room.winner_id == b.id
     assert res["over"] is True and res["winner"] == b.id
+
+
+def test_timeout_eliminates_without_ending_game_with_three_players():
+    room = Room(code="ROSE")
+    room.add_player("a"); room.add_player("b"); room.add_player("c")
+    room.start(seed_word="orage", forbidden_order=list("xyzjkq"))
+    a = room.players[0]
+    room.timeout(a.id); room.active_index = 0     # on force a à rejouer/timeout
+    room.timeout(a.id); room.active_index = 0
+    res = room.timeout(a.id)                       # a éliminé, mais b et c restent
+    assert res["eliminated"] is True
+    assert res["over"] is False
+    assert room.state == "playing"
+    assert res["active"] in (room.players[1].id, room.players[2].id)
+
+
+def test_remove_player_during_play_ends_game_on_last_survivor():
+    room = _playing_room()                         # 2 joueurs, en jeu
+    a, b = room.players
+    room.remove_player(b.id)                       # b quitte -> a seul
+    assert room.state == "over"
+    assert room.winner_id == a.id
+
+
+def test_timeout_after_attrition_is_ignored_no_contradiction():
+    room = _playing_room()
+    a, b = room.players
+    room.remove_player(b.id)                        # partie déjà terminée (a gagne)
+    res = room.timeout(a.id)                         # signal tardif -> ignoré
+    assert res == {"ok": False}
+    assert a.lives == LIVES                          # aucune vie perdue après la fin
+
+
+def test_timeout_not_active_returns_bare_false():
+    room = _playing_room()
+    res = room.timeout(room.players[1].id)          # pas le joueur actif
+    assert res == {"ok": False}

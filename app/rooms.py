@@ -73,6 +73,9 @@ class Room:
         # si on a retiré l'hôte, en promouvoir un nouveau (sinon salon bloqué)
         if was_host and not any(p.is_host for p in self.players):
             self.players[0].is_host = True
+        # attrition en cours de partie : s'il ne reste qu'un vivant, la partie se termine
+        if self.state == "playing":
+            self._finish_if_over()
 
     def can_start(self) -> bool:
         return self.state == "lobby" and len(self.players) >= MIN_PLAYERS
@@ -152,7 +155,7 @@ class Room:
             "ok": True, "life_lost": pid, "lives": active.lives,
             "eliminated": eliminated, "over": False, "winner": None,
         }
-        if self._finish_if_over():
+        if eliminated and self._finish_if_over():
             res["over"] = True
             res["winner"] = self.winner_id
             res["active"] = None
