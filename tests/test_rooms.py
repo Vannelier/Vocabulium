@@ -160,3 +160,31 @@ def test_submit_signals_new_forbidden_letter_on_escalation():
     res = room.submit(a.id, "foudre", accepted=True)
     assert res["ok"] is True
     assert res["new_forbidden"] == "z"        # 1re lettre de l'ordre devient active
+
+
+def test_submit_no_crash_when_forbidden_pool_exhausted():
+    room = Room(code="ROSE")
+    room.add_player("a"); room.add_player("b")
+    room.start(seed_word="orage", forbidden_order=["z", "q"])   # pool de 2 lettres
+    room.word_count = 14          # forbidden_count=2 ; +1 -> 15 -> after=3 > pool(2)
+    a = room.active_player()
+    res = room.submit(a.id, "brume", accepted=True)   # sans z/q
+    assert res["ok"] is True
+    assert res["new_forbidden"] is None               # pool épuisé : aucune nouvelle lettre
+
+
+def test_next_alive_skips_eliminated_player():
+    room = Room(code="ROSE")
+    room.add_player("a"); room.add_player("b"); room.add_player("c")
+    room.start(seed_word="orage", forbidden_order=list("xyzjkq"))
+    room.players[1].alive = False        # b éliminé
+    a = room.players[0]
+    res = room.submit(a.id, "foudre", accepted=True)
+    assert res["active"] == room.players[2].id   # saute b (mort) -> c
+
+
+def test_submit_in_lobby_is_not_your_turn():
+    room = Room(code="ROSE")
+    p = room.add_player("a")             # partie non lancée (état lobby)
+    res = room.submit(p.id, "foudre", accepted=True)
+    assert res["ok"] is False and res["reason"] == "not_your_turn"

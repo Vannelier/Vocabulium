@@ -113,7 +113,8 @@ class Room:
             return {"ok": False, "reason": "not_your_turn"}
         if canonical_word in self.played:
             return {"ok": False, "reason": "already_played"}
-        if letters.offending_letters(canonical_word, self.active_forbidden()):
+        forbidden = self.active_forbidden()
+        if letters.offending_letters(canonical_word, forbidden):
             return {"ok": False, "reason": "forbidden_letter"}
         if not accepted:
             return {"ok": False, "reason": "too_far"}
@@ -123,7 +124,9 @@ class Room:
         self.current_word = canonical_word
         self.word_count += 1
         after = letters.forbidden_count(self.word_count, LETTER_EVERY)
-        new_forbidden = self.active_forbidden()[after - 1] if after > before else None
+        active_now = self.active_forbidden()
+        # borne : le pool de lettres peut être épuisé -> pas de nouvelle lettre
+        new_forbidden = active_now[after - 1] if before < after <= len(active_now) else None
 
         self.active_index = self._next_alive_index(self.active_index)
         return {
