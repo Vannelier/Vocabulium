@@ -2,6 +2,7 @@
 (isolé dans validate_hop pour les tests) puis applique à la Room, et broadcast."""
 from __future__ import annotations
 
+import asyncio
 import random
 import time
 
@@ -173,3 +174,31 @@ async def _cleanup(ws: WebSocket) -> None:
     if was_playing and room.state == "over":
         await _broadcast(code, {"type": "game_over", "winner": room.winner_id,
                                 "state": _room_state(room)})
+
+
+async def timeout_loop() -> None:
+    """Balaie les salons en jeu ; à deadline dépassée, applique le timeout au
+    joueur actif et broadcast (life_lost / game_over / turn suivant)."""
+    while True:
+        now = time.monotonic()
+        for code, room in list(manager.rooms.items()):
+            if room.state != "playing":
+                continue
+            if room.turn_deadline and now >= room.turn_deadline:
+                active = room.active_player()
+                if active is None:
+                    continue
+                res = room.timeout(active.id)
+                if not res.get("ok"):
+                    continue
+                await _broadcast(code, {"type": "life_lost", "pid": res["life_lost"],
+                                        "lives": res["lives"],
+                                        "eliminated": res["eliminated"],
+                                        "state": _room_state(room)})
+                if res["over"]:
+                    await _broadcast(code, {"type": "game_over", "winner": res["winner"],
+                                            "state": _room_state(room)})
+                    room.turn_deadline = 0.0
+                else:
+                    await _broadcast(code, _start_turn(room))
+        await asyncio.sleep(0.05)

@@ -7,6 +7,7 @@ multiplicateur, encaisse, etc.
 """
 from __future__ import annotations
 
+import asyncio
 import datetime
 import sys
 from pathlib import Path
@@ -21,10 +22,18 @@ import constants as C
 from app.db import Vocab
 from app.scoring import score_hop, same_root, same_lemma, rarete
 from app.seed import daily_seed, random_seed
+from app import ws as ws_module
 
 app = FastAPI(title="Vocabulium")
 db = Vocab()
 WEB_DIR = C.PROJECT_ROOT / "web"
+
+app.include_router(ws_module.router)
+
+
+@app.on_event("startup")
+async def _start_timeout_loop() -> None:
+    asyncio.create_task(ws_module.timeout_loop())
 
 
 class HopRequest(BaseModel):

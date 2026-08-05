@@ -137,3 +137,41 @@ def test_disconnect_midgame_broadcasts_game_over(monkeypatch):
             if msg["type"] == "game_over":
                 go = msg; break
         assert go is not None and go["winner"] == you
+
+
+def _app_with_loop(monkeypatch):
+    import asyncio
+    app = _app(monkeypatch)
+    holder = {}
+
+    @app.on_event("startup")
+    async def _start():
+        holder["task"] = asyncio.create_task(ws.timeout_loop())
+
+    @app.on_event("shutdown")
+    async def _stop():
+        t = holder.get("task")
+        if t:
+            t.cancel()
+
+    return app
+
+
+def test_timeout_loses_life(monkeypatch):
+    monkeypatch.setattr(ws, "TURN_SECONDS", 0.05)   # deadline quasi immédiate
+    app = _app_with_loop(monkeypatch)
+    with TestClient(app) as client:                 # `with` -> startup -> loop démarre
+        with client.websocket_connect("/ws") as host, \
+             client.websocket_connect("/ws") as guest:
+            host.send_json({"action": "create", "name": "toi"})
+            code = host.receive_json()["code"]
+            guest.send_json({"action": "join", "code": code, "name": "Léa"})
+            guest.receive_json(); host.receive_json()
+            host.send_json({"action": "start"})
+            # on ne joue pas -> la boucle doit émettre life_lost
+            seen = None
+            for _ in range(40):
+                m = host.receive_json()
+                if m["type"] == "life_lost":
+                    seen = m; break
+            assert seen is not None and seen["lives"] == 2
