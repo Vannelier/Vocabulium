@@ -82,8 +82,22 @@ async def ws_endpoint(ws: WebSocket) -> None:
     await ws.accept()
     try:
         while True:
-            data = await ws.receive_json()
+            try:
+                data = await ws.receive_json()
+            except WebSocketDisconnect:
+                raise
+            except Exception:
+                # trame non-JSON / illisible : on signale sans tuer la connexion
+                await ws.send_json({"type": "error", "reason": "bad_message"})
+                continue
+            if not isinstance(data, dict):
+                await ws.send_json({"type": "error", "reason": "bad_message"})
+                continue
             action = data.get("action")
+
+            if action in ("create", "join") and ws in _who:
+                await ws.send_json({"type": "error", "reason": "already_in_room"})
+                continue
 
             if action == "create":
                 room = manager.create()
@@ -109,7 +123,8 @@ async def ws_endpoint(ws: WebSocket) -> None:
             elif action == "start":
                 code, pid = _who.get(ws, (None, None))
                 room = manager.get(code) if code else None
-                if room is None or room.player(pid) is None or not room.player(pid).is_host:
+                me = room.player(pid) if room else None
+                if room is None or me is None or not me.is_host:
                     await ws.send_json({"type": "error", "reason": "not_host"}); continue
                 if not room.can_start():
                     await ws.send_json({"type": "error", "reason": "need_players"}); continue
@@ -121,7 +136,7 @@ async def ws_endpoint(ws: WebSocket) -> None:
                 code, pid = _who.get(ws, (None, None))
                 room = manager.get(code) if code else None
                 if room is None:
-                    continue
+                    await ws.send_json({"type": "error", "reason": "no_room"}); continue
                 v = validate_hop(room.current_word, data.get("word", ""))
                 if not v["ok"]:
                     await ws.send_json({"type": "hop_rejected", "reason": v["reason"]}); continue
@@ -134,8 +149,9 @@ async def ws_endpoint(ws: WebSocket) -> None:
                     "scored_by": res["scored_by"], "new_forbidden": res["new_forbidden"],
                     "state": _room_state(room)})
                 await _broadcast(room.code, _start_turn(room))
-
     except WebSocketDisconnect:
+        pass
+    finally:
         await _cleanup(ws)
 
 
