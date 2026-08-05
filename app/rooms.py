@@ -132,6 +132,7 @@ class Room:
         new_forbidden = active_now[after - 1] if before < after <= len(active_now) else None
 
         self.active_index = self._next_alive_index(self.active_index)
+        self.turn_deadline = 0.0   # invalidée jusqu'à ce que ws relance le tour (évite un timeout sur le nouveau joueur)
         return {
             "ok": True,
             "current": self.current_word,
@@ -161,6 +162,7 @@ class Room:
             res["active"] = None
             return res
         self.active_index = self._next_alive_index(self.active_index)
+        self.turn_deadline = 0.0
         res["active"] = self.active_player().id
         return res
 

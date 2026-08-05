@@ -266,3 +266,19 @@ def test_timeout_not_active_returns_bare_false():
     room = _playing_room()
     res = room.timeout(room.players[1].id)          # pas le joueur actif
     assert res == {"ok": False}
+
+
+def test_submit_clears_turn_deadline_on_advance():
+    room = _playing_room()
+    room.turn_deadline = 999.0
+    a = room.players[0]
+    room.submit(a.id, "foudre", accepted=True)
+    assert room.turn_deadline == 0.0
+
+
+def test_timeout_clears_turn_deadline_on_advance():
+    room = _playing_room()
+    room.turn_deadline = 999.0
+    a = room.players[0]
+    room.timeout(a.id)                     # -1 vie, passe au suivant (jeu pas fini)
+    assert room.turn_deadline == 0.0

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import random
 import time
 
@@ -13,6 +14,7 @@ from app.rooms import RoomManager
 
 router = APIRouter()
 manager = RoomManager()
+log = logging.getLogger("vocabulium.ws")
 
 # connexions : code salon -> { pid: WebSocket }
 _conns: dict[str, dict[str, WebSocket]] = {}
@@ -178,18 +180,21 @@ async def _cleanup(ws: WebSocket) -> None:
 
 async def timeout_loop() -> None:
     """Balaie les salons en jeu ; à deadline dépassée, applique le timeout au
-    joueur actif et broadcast (life_lost / game_over / turn suivant)."""
+    joueur actif et broadcast (life_lost / game_over / turn suivant). Un salon en
+    erreur ne doit jamais tuer la boucle globale."""
     while True:
         now = time.monotonic()
         for code, room in list(manager.rooms.items()):
-            if room.state != "playing":
-                continue
-            if room.turn_deadline and now >= room.turn_deadline:
+            try:
+                if room.state != "playing":
+                    continue
+                if not (room.turn_deadline and now >= room.turn_deadline):
+                    continue
                 active = room.active_player()
                 if active is None:
                     continue
                 res = room.timeout(active.id)
-                if not res.get("ok"):
+                if not res["ok"]:
                     continue
                 await _broadcast(code, {"type": "life_lost", "pid": res["life_lost"],
                                         "lives": res["lives"],
@@ -198,7 +203,8 @@ async def timeout_loop() -> None:
                 if res["over"]:
                     await _broadcast(code, {"type": "game_over", "winner": res["winner"],
                                             "state": _room_state(room)})
-                    room.turn_deadline = 0.0
                 else:
                     await _broadcast(code, _start_turn(room))
+            except Exception:
+                log.exception("timeout_loop: erreur sur le salon %s", code)
         await asyncio.sleep(0.05)

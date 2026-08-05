@@ -33,7 +33,7 @@ app.include_router(ws_module.router)
 
 @app.on_event("startup")
 async def _start_timeout_loop() -> None:
-    asyncio.create_task(ws_module.timeout_loop())
+    app.state.timeout_task = asyncio.create_task(ws_module.timeout_loop())
 
 
 class HopRequest(BaseModel):
