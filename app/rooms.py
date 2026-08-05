@@ -138,6 +138,37 @@ class Room:
             "scored_by": pid,
         }
 
+    def timeout(self, pid: str) -> dict:
+        """Le joueur actif n'a pas répondu à temps : -1 vie, éventuelle élimination,
+        on passe au suivant (le mot courant NE change pas). Fin si 1 survivant."""
+        active = self.active_player()
+        if self.state != "playing" or active is None or active.id != pid:
+            return {"ok": False}
+        active.lives -= 1
+        eliminated = active.lives <= 0
+        if eliminated:
+            active.alive = False
+        res = {
+            "ok": True, "life_lost": pid, "lives": active.lives,
+            "eliminated": eliminated, "over": False, "winner": None,
+        }
+        if self._finish_if_over():
+            res["over"] = True
+            res["winner"] = self.winner_id
+            res["active"] = None
+            return res
+        self.active_index = self._next_alive_index(self.active_index)
+        res["active"] = self.active_player().id
+        return res
+
+    def _finish_if_over(self) -> bool:
+        alive = self.alive_players()
+        if len(alive) <= 1:
+            self.state = "over"
+            self.winner_id = alive[0].id if alive else None
+            return True
+        return False
+
 
 class RoomManager:
     def __init__(self) -> None:

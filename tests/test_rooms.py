@@ -188,3 +188,44 @@ def test_submit_in_lobby_is_not_your_turn():
     p = room.add_player("a")             # partie non lancée (état lobby)
     res = room.submit(p.id, "foudre", accepted=True)
     assert res["ok"] is False and res["reason"] == "not_your_turn"
+
+
+def test_timeout_costs_a_life_and_passes_turn():
+    room = _playing_room()
+    a = room.players[0]
+    res = room.timeout(a.id)
+    assert a.lives == LIVES - 1
+    assert a.alive is True
+    assert res["life_lost"] == a.id
+    assert res["active"] == room.players[1].id        # tour passé
+    assert room.current_word == "orage"               # le mot NE change pas
+
+
+def test_timeout_ignored_if_not_active_player():
+    room = _playing_room()
+    b = room.players[1]                                # pas le joueur actif
+    res = room.timeout(b.id)
+    assert res["ok"] is False
+    assert b.lives == LIVES
+
+
+def test_third_timeout_eliminates_player():
+    room = _playing_room()
+    a = room.players[0]
+    room.timeout(a.id); room.active_index = 0
+    room.timeout(a.id); room.active_index = 0
+    res = room.timeout(a.id)
+    assert a.lives == 0 and a.alive is False
+    assert res["eliminated"] is True
+
+
+def test_last_survivor_ends_game():
+    room = _playing_room()
+    a, b = room.players
+    # a se fait éliminer (3 timeouts), b reste seul -> fin
+    for _ in range(3):
+        room.active_index = 0
+        res = room.timeout(a.id)
+    assert room.state == "over"
+    assert room.winner_id == b.id
+    assert res["over"] is True and res["winner"] == b.id
