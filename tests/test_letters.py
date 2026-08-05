@@ -43,3 +43,17 @@ def test_active_forbidden_skips_target_letters():
 def test_offending_letters_accent_insensitive():
     assert set(letters.offending_letters("étage", ["e"])) == {"e"}   # é -> e
     assert letters.offending_letters("mot", ["z"]) == []
+
+
+def test_active_forbidden_without_target_letters():
+    order = ["o", "u", "l", "d", "c"]
+    # sans target_letters : pas de saut, on prend les N premières de l'ordre
+    active = letters.active_forbidden(order, words=15, every=5)
+    assert active == ["o", "u", "l"]
+
+
+def test_forbidden_count_and_active_forbidden_with_nonzero_start():
+    assert letters.forbidden_count(0, every=5, start=1) == 1
+    order = ["o", "u", "l", "d", "c"]
+    active = letters.active_forbidden(order, words=5, every=5, start=1)
+    assert active == ["o", "u"]

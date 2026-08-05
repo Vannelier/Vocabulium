@@ -43,6 +43,7 @@ def draw_order(rand: Callable[[], float]) -> list[str]:
 
 
 def forbidden_count(words: int, every: int = 5, start: int = 0) -> int:
+    """Nombre de lettres interdites après `words` mots : `start` au départ, +1 tous les `every`."""
     return start + words // every
 
 
