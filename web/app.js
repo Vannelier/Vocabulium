@@ -600,7 +600,6 @@ el.guess.addEventListener("input", () => {
   el.guess.classList.toggle("hasforbidden", bad.length > 0);
 });
 el.play.addEventListener("click", () => startWith("random"));
-document.getElementById("playDaily").addEventListener("click", () => startWith("daily"));
 async function startWith(mode) {
   S.mode = mode;
   await prepareRun();     // re-fetch le seed + re-tire les lettres selon le mode choisi
