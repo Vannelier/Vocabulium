@@ -1,6 +1,6 @@
 # Dépendances RUNTIME (prod). L'app charge l'artefact compact data/vectors.f16.npy
 # -> ni gensim ni wordfreq nécessaires en ligne. Léger et rapide à builder.
 fastapi>=0.110
-uvicorn>=0.27
+uvicorn[standard]>=0.27
 pydantic>=2.0
 numpy>=1.26
