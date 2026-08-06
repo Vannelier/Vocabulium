@@ -55,7 +55,7 @@ def _room_state(room) -> dict:
     return {
         "code": room.code, "state": room.state, "current": room.current_word,
         "word_count": room.word_count,
-        "active": room.active_player().id if room.active_player() else None,
+        "active": room.active_player().id if (room.state == "playing" and room.active_player()) else None,
         "forbidden": room.active_forbidden() if room.state == "playing" else [],
         "players": [
             {"id": p.id, "name": p.name, "color": p.color, "lives": p.lives,
@@ -140,7 +140,12 @@ async def ws_endpoint(ws: WebSocket) -> None:
                 room = manager.get(code) if code else None
                 if room is None:
                     await ws.send_json({"type": "error", "reason": "no_room"}); continue
-                v = validate_hop(room.current_word, data.get("word", ""))
+                if room.state != "playing":
+                    await ws.send_json({"type": "hop_rejected", "reason": "not_playing"}); continue
+                word = data.get("word")
+                if not isinstance(word, str) or not word.strip():
+                    await ws.send_json({"type": "error", "reason": "bad_message"}); continue
+                v = validate_hop(room.current_word, word)
                 if not v["ok"]:
                     await ws.send_json({"type": "hop_rejected", "reason": v["reason"]}); continue
                 res = room.submit(pid, v["canonical"], v["accepted"])
@@ -166,16 +171,18 @@ async def _cleanup(ws: WebSocket) -> None:
     room = manager.get(code)
     if room is None:
         return
-    was_playing = room.state == "playing"
-    room.remove_player(pid)
-    if not room.players:
+    res = room.remove_player(pid)
+    if not res.get("removed"):
+        return
+    if res.get("empty"):
         manager.drop(code)
         return
     await _broadcast(code, {"type": "state", "state": _room_state(room)})
-    # une déconnexion en cours de partie peut terminer la partie (attrition)
-    if was_playing and room.state == "over":
-        await _broadcast(code, {"type": "game_over", "winner": room.winner_id,
+    if res.get("over"):
+        await _broadcast(code, {"type": "game_over", "winner": res["winner"],
                                 "state": _room_state(room)})
+    elif res.get("turn_handoff"):
+        await _broadcast(code, _start_turn(room))
 
 
 async def timeout_loop() -> None:

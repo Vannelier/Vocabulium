@@ -282,3 +282,41 @@ def test_timeout_clears_turn_deadline_on_advance():
     a = room.players[0]
     room.timeout(a.id)                     # -1 vie, passe au suivant (jeu pas fini)
     assert room.turn_deadline == 0.0
+
+
+def test_remove_active_player_during_play_hands_off_turn():
+    room = Room(code="ROSE")
+    room.add_player("a"); room.add_player("b"); room.add_player("c")
+    room.start(seed_word="orage", forbidden_order=list("xyzjkq"))
+    room.turn_deadline = 999.0
+    a = room.players[0]                       # a actif (index 0)
+    res = room.remove_player(a.id)            # le joueur ACTIF quitte
+    assert res["turn_handoff"] is True and res["over"] is False
+    assert room.state == "playing"
+    assert room.active_player().alive is True
+    assert room.turn_deadline == 0.0          # deadline invalidée -> ws relancera le tour
+
+
+def test_remove_active_player_skips_dead_next():
+    room = Room(code="ROSE")
+    for n in ("a", "b", "c", "d"):
+        room.add_player(n)
+    room.start(seed_word="orage", forbidden_order=list("xyzjkq"))
+    room.players[1].alive = False             # b (le suivant) est mort
+    a = room.players[0]                        # a actif (index 0)
+    res = room.remove_player(a.id)             # a part -> slot suivant = b (mort) -> saute
+    assert res["turn_handoff"] is True and res["over"] is False
+    assert room.active_player().name == "c"   # saute b mort -> c
+
+
+def test_remove_nonactive_player_keeps_active_turn():
+    room = Room(code="ROSE")
+    room.add_player("a"); room.add_player("b"); room.add_player("c")
+    room.start(seed_word="orage", forbidden_order=list("xyzjkq"))
+    room.active_index = 1                      # b actif
+    room.turn_deadline = 999.0
+    a = room.players[0]                         # on retire un NON-actif (a)
+    res = room.remove_player(a.id)
+    assert res["turn_handoff"] is False
+    assert room.active_player().name == "b"    # b reste actif
+    assert room.turn_deadline == 999.0         # sa deadline n'est pas touchée

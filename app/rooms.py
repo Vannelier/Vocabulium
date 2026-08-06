@@ -55,27 +55,44 @@ class Room:
     def player(self, pid: str) -> Player | None:
         return next((p for p in self.players if p.id == pid), None)
 
-    def remove_player(self, pid: str) -> None:
+    def remove_player(self, pid: str) -> dict:
+        """Retire un joueur. En lobby : simple retrait (+ promotion d'hôte). En cours
+        de partie : gère l'attrition (fin si 1 survivant) et, si le joueur ACTIF part,
+        passe la main au prochain vivant en invalidant la deadline. Retourne des infos
+        pour que la couche réseau sache quoi diffuser."""
         idx = next((i for i, p in enumerate(self.players) if p.id == pid), None)
         if idx is None:
-            return
+            return {"removed": False}
         was_host = self.players[idx].is_host
+        was_active = (self.state == "playing" and idx == self.active_index)
         self.players.pop(idx)
         if not self.players:
             self.active_index = 0
-            return
-        # garder active_index pointé sur le même joueur logique (ou le suivant si
-        # on a retiré le joueur actif) et jamais hors bornes
+            return {"removed": True, "empty": True}
+        # garder active_index pointé sur le même joueur logique et jamais hors bornes
         if idx < self.active_index:
             self.active_index -= 1
         if self.active_index >= len(self.players):
             self.active_index = 0
-        # si on a retiré l'hôte, en promouvoir un nouveau (sinon salon bloqué)
         if was_host and not any(p.is_host for p in self.players):
             self.players[0].is_host = True
-        # attrition en cours de partie : s'il ne reste qu'un vivant, la partie se termine
-        if self.state == "playing":
-            self._finish_if_over()
+
+        result = {"removed": True, "empty": False, "over": False, "turn_handoff": False}
+        if self.state != "playing":
+            return result
+        # attrition : s'il ne reste qu'un vivant, la partie se termine
+        if self._finish_if_over():
+            result["over"] = True
+            result["winner"] = self.winner_id
+            return result
+        # le joueur ACTIF est parti : passer la main au prochain vivant (en sautant les
+        # éliminés) et invalider la deadline -> ws relancera le tour.
+        if was_active:
+            if not self.players[self.active_index].alive:
+                self.active_index = self._next_alive_index(self.active_index)
+            self.turn_deadline = 0.0
+            result["turn_handoff"] = True
+        return result
 
     def can_start(self) -> bool:
         return self.state == "lobby" and len(self.players) >= MIN_PLAYERS
