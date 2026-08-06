@@ -18,7 +18,9 @@ def _app(monkeypatch):
     def fake_validate(current, word):
         canon = word.lower()
         if canon in {"foudre", "pluie", "vent"}:
-            return {"ok": True, "accepted": True, "canonical": canon}
+            return {"ok": True, "accepted": True, "canonical": canon,
+                    "score": {"zone": "strong", "rarete": 0.5, "speed": 0.4,
+                              "hop_points": 120.0, "prox": 0.4, "reason": ""}}
         return {"ok": False, "reason": "unknown_word"}
     monkeypatch.setattr(ws, "validate_hop", fake_validate)
     monkeypatch.setattr(ws, "pick_seed", lambda: "orage")
@@ -26,6 +28,26 @@ def _app(monkeypatch):
     app = FastAPI()
     app.include_router(ws.router)
     return app
+
+
+def test_hop_accepted_carries_score_decomposition(monkeypatch):
+    client = TestClient(_app(monkeypatch))
+    with client.websocket_connect("/ws") as host, \
+         client.websocket_connect("/ws") as guest:
+        host.send_json({"action": "create", "name": "toi"})
+        code = host.receive_json()["code"]
+        guest.send_json({"action": "join", "code": code, "name": "B"})
+        guest.receive_json(); host.receive_json()
+        host.send_json({"action": "start"})
+        m = host.receive_json()
+        while m["type"] != "turn":
+            m = host.receive_json()
+        host.send_json({"action": "hop", "word": "foudre"})
+        acc = host.receive_json()
+        while acc["type"] != "hop_accepted":
+            acc = host.receive_json()
+        assert acc["score"]["zone"] == "strong"
+        assert acc["score"]["hop_points"] == 120.0
 
 
 def test_create_and_join_lobby(monkeypatch):

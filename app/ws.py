@@ -38,7 +38,10 @@ def validate_hop(current: str, word: str) -> dict:
         return {"ok": False, "reason": "already_played"}
     prox = db.prox(prev, canon)
     res = score_hop(prox, db.zipf(canon), 0.0)
-    return {"ok": True, "accepted": res.zone != "reject", "canonical": canon}
+    return {"ok": True, "accepted": res.zone != "reject", "canonical": canon,
+            "score": {"zone": res.zone, "rarete": res.rarete, "speed": res.speed,
+                      "hop_points": res.hop_points, "prox": res.prox,
+                      "reason": res.reason}}
 
 
 def pick_seed() -> str:
@@ -155,6 +158,7 @@ async def ws_endpoint(ws: WebSocket) -> None:
                     "type": "hop_accepted", "current": res["current"],
                     "word_count": res["word_count"], "active": res["active"],
                     "scored_by": res["scored_by"], "new_forbidden": res["new_forbidden"],
+                    "score": v["score"],
                     "state": _room_state(room)})
                 await _broadcast(room.code, _start_turn(room))
     except WebSocketDisconnect:
