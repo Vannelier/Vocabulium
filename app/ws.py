@@ -153,7 +153,12 @@ async def ws_endpoint(ws: WebSocket) -> None:
                     await ws.send_json({"type": "hop_rejected", "reason": v["reason"]}); continue
                 res = room.submit(pid, v["canonical"], v["accepted"])
                 if not res["ok"]:
-                    await ws.send_json({"type": "hop_rejected", "reason": res["reason"]}); continue
+                    rej = {"type": "hop_rejected", "reason": res["reason"]}
+                    # proximité connue (mot du dico) : on la renvoie pour que le client
+                    # affiche la barre de proximité au refus, comme en solo.
+                    if v.get("score"):
+                        rej["score"] = v["score"]
+                    await ws.send_json(rej); continue
                 await _broadcast(room.code, {
                     "type": "hop_accepted", "current": res["current"],
                     "word_count": res["word_count"], "active": res["active"],

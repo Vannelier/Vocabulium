@@ -9,7 +9,7 @@
     mpend: $("mpend"), end: $("end"),
   };
   const M = { ws: null, code: null, you: null, players: [], state: "idle",
-              activePid: null, raf: 0, turnMs: 15000, gameCode: null };
+              activePid: null, raf: 0, turnMs: 15000, gameCode: null, lastWord: "" };
 
   // --- écrans : montre exactement un overlay .end (ou aucun = écran de jeu) ----
   function show(name) {
@@ -129,6 +129,14 @@
     show(null);                                // aucun overlay : écran de jeu visible
     $("players").hidden = false; $("turnlbl").hidden = false;
     resetLocalScore();
+    // Repart d'un écran propre : sans ça, le bandeau des lettres interdites (et le
+    // panneau de détail) gardait l'état de la partie précédente (bug : « lettre
+    // interdite déjà présente » au lancement d'une nouvelle partie).
+    renderForbiddenBand([], 0);
+    el.detail.className = "detail";
+    el.dword.textContent = "—"; el.dpts.textContent = "";
+    renderGate(null); setBars(0, 0, true);
+    el.guess.classList.remove("hasforbidden");
   }
   function renderForbiddenBand(forbidden, wordCount) {
     el.forbidLetters.innerHTML = (forbidden || []).map((L) =>
@@ -176,31 +184,40 @@
               Math.round(sc.hop_points || 0));
     renderForbiddenBand(msg.state.forbidden, msg.word_count);
     if (msg.new_forbidden) newForbiddenBeat(msg.new_forbidden);
-    if (msg.scored_by === M.you) {             // score/rang décoratifs : l'auteur seul
-      const gained = (sc.hop_points || 0) * S.mult;
-      S.score += gained;
-      if (sc.zone === "strong") addFill(0.6 * (0.5 + (sc.rarete || 0) + 0.6 * (sc.speed || 0)));
-      else addFill(0.12);
-      renderHud();
-      toastScore(gained, weak ? "weakt" : "", sc.rarete || 0);
-      if ((sc.rarete || 0) >= 0.6) rareJuice(sc.rarete);
-    }
+    // Pas de score en multi : seul le juice « mot rare » (étincelles) est conservé
+    // pour l'auteur du coup — le reste (compteur, rang, toast +N) est retiré.
+    if (msg.scored_by === M.you && (sc.rarete || 0) >= 0.6) rareJuice(sc.rarete);
     el.current.textContent = msg.current;
+    el.guess.classList.remove("hasforbidden");
     renderPlayers();
   }
 
   // --- HOP refusé (pas de perte de vie, feedback seulement) -------------------
+  // Aligné sur le solo : lettre interdite -> tuile qui clignote + saisie rouge ;
+  // trop loin -> position réelle sur la barre de proximité + « trop loin » ; mot
+  // inconnu / déjà joué -> texte de gate. Le mot d'ancrage pulse (blinkUnchanged).
   function onHopRejected(msg) {
     const r = msg.reason;
-    if (r === "forbidden_letter") {
-      const active = [...el.forbidLetters.querySelectorAll(".fl")].map((n) => n.dataset.l);
-      flashForbidden(Letters.offendingLetters(el.guess.value.toLowerCase(), active));
+    const sc = msg.score;
+    const typed = M.lastWord || "";             // la saisie est déjà vidée à l'envoi
+
+    if (r === "forbidden_letter") {             // filet serveur (le pré-contrôle local prime)
+      flashForbidden(Letters.offendingLetters(typed.toLowerCase(), domForbidden()));
+      shake();
+      return;
     }
-    el.guess.classList.add("shake");
-    setTimeout(() => el.guess.classList.remove("shake"), 300);
-    el.dword.innerHTML = `${esc(el.guess.value)} <small>${rejText(r)}</small>`;
-    el.dpts.textContent = ""; el.detail.className = "detail live reject";
-    if (r !== "forbidden_letter") el.guess.value = "";
+
+    if (sc) {                                   // mot du dico : on connaît la proximité
+      const res = { word: typed, input: typed, prox: sc.prox, reason: sc.reason,
+                    rarete: sc.rarete || 0, speed: sc.speed || 0 };
+      showDetail(res, 0, r === "too_far" ? "reject" : (sc.zone || "reject"));
+    } else {                                    // inconnu / déjà joué : pas de proximité
+      el.dword.innerHTML = `${esc(typed)} <small>${rejText(r)}</small>`;
+      el.dpts.textContent = ""; el.detail.className = "detail live reject";
+      renderGate(null); setBars(0, 0, true);
+    }
+    shake();
+    blinkUnchanged();
   }
   function rejText(r) {
     return ({ too_far: "trop loin", already_played: "déjà joué",
@@ -233,9 +250,10 @@
     const iWon = msg.winner === M.you;
     $("mpendTitle").textContent = iWon ? "Tu as gagné !" : "Partie terminée";
     $("mpWinner").textContent = w ? `🏆 ${w.name}` : "—";
+    // Le vainqueur est le dernier survivant (pas de score en multi).
     $("mpScores").innerHTML = M.players.map((p) =>
       `<span class="lp"><i class="dot" style="background:${p.color}"></i>${esc(p.name)}`
-      + `${p.id === M.you ? " · <b>" + Math.round(S.score) + " pts</b>" : ""}</span>`).join("");
+      + `${!p.alive ? ' <span class="host">éliminé</span>' : ""}</span>`).join("");
     show("mpend");
   }
 
@@ -275,7 +293,15 @@
     if (e.key === "Enter" && M.state === "playing" && myTurn()) {
       e.preventDefault();
       const w = el.guess.value.trim();
-      if (w) { send({ action: "hop", word: w }); el.guess.value = ""; }
+      if (!w) return;
+      // Pré-contrôle lettre interdite EN LOCAL, comme en solo : feedback immédiat
+      // (tuile qui clignote + secousse), pas d'aller-retour, saisie conservée.
+      const bad = Letters.offendingLetters(w.toLowerCase(), domForbidden());
+      if (bad.length) { flashForbidden(bad); shake(); return; }
+      M.lastWord = w;
+      send({ action: "hop", word: w });
+      el.guess.value = "";
+      el.guess.classList.remove("hasforbidden");
     }
   }, true);
 

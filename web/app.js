@@ -595,8 +595,14 @@ function endRun() {
 el.guess.addEventListener("keydown", (e) => {
   if (e.key === "Enter") { e.preventDefault(); submitHop(); }
 });
+// Lettres interdites RÉELLEMENT affichées (tuiles du bandeau). Source unique de
+// vérité pour le feedback rouge de la saisie : en solo le bandeau vient de
+// activeForbidden(), en multi il vient du serveur — les deux sont couverts.
+function domForbidden() {
+  return [...el.forbidLetters.querySelectorAll(".fl")].map((n) => n.dataset.l);
+}
 el.guess.addEventListener("input", () => {
-  const bad = Letters.offendingLetters(el.guess.value.toLowerCase(), activeForbidden());
+  const bad = Letters.offendingLetters(el.guess.value.toLowerCase(), domForbidden());
   el.guess.classList.toggle("hasforbidden", bad.length > 0);
 });
 el.play.addEventListener("click", () => startWith("random"));

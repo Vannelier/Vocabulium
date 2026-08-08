@@ -374,7 +374,11 @@ body::after {
 /* --- Écrans départ / fin -------------------------------------------------- */
 .end { position: fixed; inset: 0; z-index: 20; display: none;
   align-items: center; justify-content: center; flex-direction: column; gap: 10px;
-  padding: 24px; text-align: center;
+  /* safe-area incluse : avec viewport-fit=cover, l'overlay couvre tout l'écran ;
+     sans ça les boutons se retrouvaient décalés sous l'encoche / les coins arrondis. */
+  padding: calc(24px + env(safe-area-inset-top)) calc(24px + env(safe-area-inset-right))
+           calc(24px + env(safe-area-inset-bottom)) calc(24px + env(safe-area-inset-left));
+  text-align: center;
   background:
     radial-gradient(120% 80% at 50% 0%, rgba(255,46,151,.18), transparent 55%),
     rgba(9,5,22,.94);
@@ -439,7 +443,11 @@ body::after {
 @media (max-width: 560px) {
   body { overflow: hidden; height: 100dvh; align-items: stretch; }
 
-  #app { height: 100dvh; margin: 0; padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+  #app { height: 100dvh; margin: 0;
+    /* safe-area sur les 4 côtés (viewport-fit=cover) : le haut ne passe plus sous
+       l'encoche / la barre d'état, et le contenu reste centré hors des bords arrondis. */
+    padding: calc(8px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right))
+             calc(8px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
     display: flex; flex-direction: column; gap: 0; }
 
   /* Blocs fixes : ne grandissent pas, marges resserrées */
@@ -500,12 +508,24 @@ body::after {
   .forbid-next { display: none; }
   .plbl { display: none; }
   .dhead { display: none; }
+  /* … mais on RÉVÈLE l'en-tête du détail quand le mot est refusé ou faible : c'est
+     là que s'affiche « mot inconnu » / « trop loin » / « déjà joué » — sinon ce
+     retour, essentiel, restait invisible clavier ouvert (écran court). */
+  .detail.reject .dhead, .detail.weak .dhead { display: flex; }
 }
 
 /* ======================= MULTIJOUEUR ======================= */
 /* Bandeau joueurs (récupère la place du record + mot bonus, masqués en multi). */
 body.multi .hiscore { display: none; }
 body.multi .cible { display: none !important; }
+
+/* Pas de score en multi : le score/rang est décoratif, nuit à la lisibilité et
+   mange de la place sur mobile. On retire tout le bloc HUD (score + rang + mult),
+   les points par mot dans la trace, et les points du panneau de détail. La barre
+   de proximité et les jauges rareté/vitesse restent (retour d'info, comme en solo). */
+body.multi .hud { display: none; }
+body.multi .trail .w .p { display: none; }
+body.multi .dpts { display: none; }
 
 .players { display: flex; gap: 5px; margin: 4px 0 10px; }
 .players .pl { flex: 1; display: flex; flex-direction: column; align-items: center;
