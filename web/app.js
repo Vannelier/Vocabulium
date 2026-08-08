@@ -69,15 +69,24 @@ const START_FORBIDDEN = 0;        // aucune lettre interdite au départ (la 1re 
 const FIRST_GAUGE_FACTOR = 2.0;   // le 1er chrono dure 2× plus longtemps (le temps de comprendre)
 
 // --- init -------------------------------------------------------------------
+// Récupère un mot de départ. Les navigateurs in-app (Messenger, Instagram…) font
+// parfois échouer/bloquer fetch : on réessaie, et si tout échoue on CONSERVE le
+// dernier mot connu (chargé au démarrage) — sans ça, un fetch raté plantait
+// prepareRun() en silence et le bouton « Solo » semblait mort.
 async function fetchSeed() {
-  const r = await fetch(`/api/seed?mode=${S.mode === "daily" ? "daily" : "random"}`).then((x) => x.json());
-  seedWord = r.word;
-  cfg = { ...cfg, ...r.config };
+  const url = `/api/seed?mode=${S.mode === "daily" ? "daily" : "random"}`;
+  for (let tries = 0; tries < 3; tries++) {
+    try {
+      const r = await fetch(url, { cache: "no-store" }).then((x) => x.json());
+      if (r && r.word) { seedWord = r.word; cfg = { ...cfg, ...r.config }; break; }
+    } catch (e) { /* réseau capricieux : on retente */ }
+    await new Promise((res) => setTimeout(res, 250 * (tries + 1)));
+  }
 
   // mode "daily" -> ordre déterministe depuis la date ; sinon aléatoire local.
-  const mode = S.mode;
+  // (indépendant du réseau : toujours calculé, même si le fetch a échoué)
   const dateKey = (new Date()).toISOString().slice(0, 10);
-  const rand = mode === "daily"
+  const rand = S.mode === "daily"
     ? Letters.rng(Letters.seedFromString(dateKey))
     : Math.random;
   S.forbiddenOrder = Letters.drawOrder(rand);
@@ -625,7 +634,13 @@ el.guess.addEventListener("input", () => {
 el.play.addEventListener("click", () => startWith("random"));
 async function startWith(mode) {
   S.mode = mode;
-  await prepareRun();     // re-fetch le seed + re-tire les lettres selon le mode choisi
+  try {
+    await prepareRun();   // re-fetch le seed + re-tire les lettres selon le mode choisi
+  } catch (e) {
+    // prepareRun est tolérant au réseau : en cas d'échec imprévu, on démarre quand
+    // même dès qu'on a un mot (celui chargé au lancement) plutôt que rester bloqué.
+    if (!seedWord) { el.guess.placeholder = "connexion impossible, réessaie…"; return; }
+  }
   startRun();
 }
 // Retour au menu : stoppe une partie en cours (le chrono s'arrête) et montre l'écran des modes.
@@ -643,4 +658,6 @@ el.brand.addEventListener("keydown", (e) => {
 });
 
 // Au chargement : on prépare la partie et on montre l'écran "Jouer" (chrono à l'arrêt).
-prepareRun().then(() => el.start.classList.add("show"));
+// `finally` : le menu s'affiche TOUJOURS, même si la préparation a échoué (réseau
+// in-app capricieux) — sinon l'utilisateur restait sur un écran vide.
+prepareRun().catch(() => {}).finally(() => el.start.classList.add("show"));
