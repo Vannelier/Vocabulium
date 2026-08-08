@@ -9,7 +9,8 @@
     mpend: $("mpend"), end: $("end"),
   };
   const M = { ws: null, code: null, you: null, players: [], state: "idle",
-              activePid: null, raf: 0, turnMs: 15000, gameCode: null, lastWord: "" };
+              activePid: null, raf: 0, turnMs: 15000, gameCode: null, lastWord: "",
+              public: false };
 
   // --- écrans : montre exactement un overlay .end (ou aucun = écran de jeu) ----
   function show(name) {
@@ -63,7 +64,7 @@
       case "error":        lobbyError(errText(msg.reason)); break;
     }
   }
-  function applyState(st) { M.players = st.players; M.state = st.state; }
+  function applyState(st) { M.players = st.players; M.state = st.state; M.public = !!st.public; }
   function errText(r) {
     return ({ no_room: "salon introuvable", full_or_started: "salon plein ou démarré",
               not_host: "seul l'hôte peut lancer", need_players: "il faut au moins 2 joueurs",
@@ -86,9 +87,10 @@
     const btn = $("lobbyStart");
     btn.hidden = !amHost;
     btn.disabled = !(amHost && canStart);
+    const pub = M.public ? "Salon public — d'autres joueurs peuvent te rejoindre. " : "";
     $("lobbyHint").textContent = canStart
-      ? (amHost ? "Prêt : clique Lancer." : "En attente de l'hôte…")
-      : "En attente de joueurs… (2 minimum)";
+      ? pub + (amHost ? "Prêt : clique Lancer quand tu veux." : "En attente de l'hôte…")
+      : pub + "En attente de joueurs… (2 minimum)";
   }
 
   // --- bandeau joueurs (lobby + jeu) -----------------------------------------
@@ -276,6 +278,8 @@
   // --- wiring (les éléments existent : ce script est chargé après le HTML) -----
   $("playMulti").addEventListener("click", open);
   $("mpBack").addEventListener("click", backToMenu);
+  $("mpQuick").addEventListener("click", () =>
+    freshConnect(() => send({ action: "quick_join", name: pseudo() })));
   $("mpCreate").addEventListener("click", () =>
     freshConnect(() => send({ action: "create", name: pseudo() })));
   $("mpJoin").addEventListener("click", () => {

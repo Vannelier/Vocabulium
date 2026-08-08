@@ -252,3 +252,27 @@ def test_active_disconnect_hands_turn_to_next(monkeypatch):
         assert seen is not None
         assert seen["active"] == b_pid            # la main passe à B
         assert seen["current"] == "orage"
+
+
+def test_quick_join_matches_two_players_same_room(monkeypatch):
+    client = TestClient(_app(monkeypatch))
+    with client.websocket_connect("/ws") as a, \
+         client.websocket_connect("/ws") as b:
+        a.send_json({"action": "quick_join", "name": "A"})
+        ja = a.receive_json()
+        assert ja["type"] == "joined" and ja["state"]["public"] is True
+        b.send_json({"action": "quick_join", "name": "B"})
+        jb = b.receive_json()
+        assert jb["code"] == ja["code"]                 # même salon public
+        st = a.receive_json()                            # broadcast d'état après le 2e
+        assert [p["name"] for p in st["state"]["players"]] == ["A", "B"]
+
+
+def test_quick_join_twice_same_socket_rejected(monkeypatch):
+    client = TestClient(_app(monkeypatch))
+    with client.websocket_connect("/ws") as sock:
+        sock.send_json({"action": "quick_join", "name": "A"})
+        assert sock.receive_json()["type"] == "joined"
+        sock.send_json({"action": "quick_join", "name": "again"})
+        r = sock.receive_json()
+        assert r["type"] == "error" and r["reason"] == "already_in_room"

@@ -31,6 +31,7 @@ class Player:
 @dataclass
 class Room:
     code: str
+    public: bool = False                 # salon de matchmaking (rejoint sans code)
     players: list[Player] = field(default_factory=list)
     state: str = "lobby"                 # "lobby" | "playing" | "over"
     current_word: str | None = None
@@ -202,10 +203,31 @@ class RoomManager:
             if code not in self.rooms:
                 return code
 
-    def create(self) -> Room:
-        room = Room(code=self._new_code())
+    def create(self, public: bool = False) -> Room:
+        room = Room(code=self._new_code(), public=public)
         self.rooms[room.code] = room
         return room
+
+    def find_public_open(self) -> Room | None:
+        """Salon PUBLIC encore en lobby avec de la place. On remplit le plus rempli
+        d'abord (regroupe les joueurs plutôt que d'éparpiller des salons à moitié
+        vides), puis on départage par code pour un choix déterministe."""
+        candidates = [r for r in self.rooms.values()
+                      if r.public and r.state == "lobby" and len(r.players) < MAX_PLAYERS]
+        if not candidates:
+            return None
+        return max(candidates, key=lambda r: (len(r.players), r.code))
+
+    def quick_join(self, name: str) -> tuple[Room, Player]:
+        """Matchmaking : rejoint un salon public en attente, ou en crée un neuf
+        (l'arrivant devient alors hôte). Robuste à la course « salon rempli
+        entre-temps » -> on crée un salon neuf en dernier recours."""
+        room = self.find_public_open() or self.create(public=True)
+        p = room.add_player(name)
+        if p is None:                      # course : plein/démarré entre-temps
+            room = self.create(public=True)
+            p = room.add_player(name)
+        return room, p
 
     def get(self, code: str) -> Room | None:
         return self.rooms.get(code)
