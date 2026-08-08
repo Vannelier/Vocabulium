@@ -427,8 +427,13 @@ body::after {
   box-shadow: 0 5px 0 #7a5a08, 0 0 22px rgba(255,210,63,.5) !important; }
 #playDaily:active { box-shadow: 0 1px 0 #7a5a08, 0 0 16px rgba(255,210,63,.5) !important; }
 .endbtns { display: flex; gap: 14px; margin-top: 20px; flex-wrap: wrap; justify-content: center; }
+/* Les boutons de menu restent AU-DESSUS de l'encart pub et captent toujours le tap,
+   même si une pub in-app se rend par-dessus le bas de l'écran (constaté en webview
+   type Messenger : bouton du bas « Solo » devenu incliquable, sans animation). */
+.end .endbtns { position: relative; z-index: 2; }
 .adslot { margin-top: 20px; min-height: 90px; width: 100%; max-width: 336px;
-  display: flex; align-items: center; justify-content: center; }
+  display: flex; align-items: center; justify-content: center;
+  position: relative; z-index: 0; overflow: hidden; }   /* isolé + rogné : ne déborde pas sur les boutons */
 /* Tant qu'aucune pub n'est chargée, on n'affiche pas de cadre vide. */
 .adslot:has(ins:not([data-loaded])) { margin-top: 0; min-height: 0; }
 .legal { margin-top: 14px; font-size: 11px; }
