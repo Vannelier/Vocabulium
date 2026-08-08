@@ -498,7 +498,12 @@ body::after {
 
   .beat .b2 { font-size: 38px; }
   .toast .big { font-size: 28px; }
-  .endbtns button, #share { flex: 1; min-width: 128px; }
+  /* Boutons de menu empilés, pleine largeur, centrés : « Multijoueur » (police pixel)
+     est bien plus large que « Solo » ; en rangée avec flex:1 la rangée débordait à
+     droite (Solo coupé). En colonne, plus de débordement possible et c'est lisible. */
+  .endbtns { flex-direction: column; align-items: stretch;
+    width: 100%; max-width: 320px; }
+  .endbtns button, #share { flex: none; width: 100%; min-width: 0; }
 }
 
 /* Très petits écrans en hauteur (clavier + petit device) : on gagne encore
