@@ -510,7 +510,6 @@ body::after {
    quelques pixels en masquant le trail et en réduisant les libellés. */
 @media (max-width: 560px) and (max-height: 620px) {
   .trail { display: none; }
-  .forbid-next { display: none; }
   .plbl { display: none; }
   .dhead { display: none; }
   /* … mais on RÉVÈLE l'en-tête du détail quand le mot est refusé ou faible : c'est
@@ -521,10 +520,10 @@ body::after {
 
 /* Mode compact piloté par JS (visualViewport) : même effet que le média max-height,
    mais déclenché aussi sur iOS où l'ouverture du clavier ne rétrécit PAS le layout
-   (le média CSS ne se déclenche alors jamais). Évite que « prochaine dans » et le
-   haut de l'écran soient rognés clavier ouvert. */
+   (le média CSS ne se déclenche alors jamais). On masque la TRACE (longue, la moins
+   utile) et les libellés secondaires, mais on GARDE « prochaine dans » visible : le
+   #app calé sur visualViewport comprime la colonne, donc rien n'est rogné en haut. */
 body.kbd .trail,
-body.kbd .forbid-next,
 body.kbd .plbl,
 body.kbd .dhead { display: none; }
 body.kbd .detail.reject .dhead,
