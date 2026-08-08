@@ -56,8 +56,8 @@ def make_forbidden_order() -> list[str]:
 
 def _room_state(room) -> dict:
     return {
-        "code": room.code, "state": room.state, "current": room.current_word,
-        "word_count": room.word_count,
+        "code": room.code, "state": room.state, "public": room.public,
+        "current": room.current_word, "word_count": room.word_count,
         "active": room.active_player().id if (room.state == "playing" and room.active_player()) else None,
         "forbidden": room.active_forbidden() if room.state == "playing" else [],
         "players": [
@@ -101,11 +101,23 @@ async def ws_endpoint(ws: WebSocket) -> None:
                 continue
             action = data.get("action")
 
-            if action in ("create", "join") and ws in _who:
+            if action in ("create", "join", "quick_join") and ws in _who:
                 await ws.send_json({"type": "error", "reason": "already_in_room"})
                 continue
 
-            if action == "create":
+            if action == "quick_join":
+                # matchmaking : rejoint un salon public en attente, sinon en crée un.
+                room, p = manager.quick_join(data.get("name", "?"))
+                _conns.setdefault(room.code, {})[p.id] = ws
+                _who[ws] = (room.code, p.id)
+                await ws.send_json({"type": "joined", "code": room.code,
+                                    "you": p.id, "state": _room_state(room)})
+                # ne prévenir les autres que si on a REJOINT un salon existant
+                # (salon fraîchement créé = 1 joueur -> rien à diffuser, comme create).
+                if len(room.players) > 1:
+                    await _broadcast(room.code, {"type": "state", "state": _room_state(room)})
+
+            elif action == "create":
                 room = manager.create()
                 p = room.add_player(data.get("name", "?"))
                 _conns.setdefault(room.code, {})[p.id] = ws

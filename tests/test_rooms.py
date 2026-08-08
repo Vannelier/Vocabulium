@@ -320,3 +320,39 @@ def test_remove_nonactive_player_keeps_active_turn():
     assert res["turn_handoff"] is False
     assert room.active_player().name == "b"    # b reste actif
     assert room.turn_deadline == 999.0         # sa deadline n'est pas touchée
+
+
+# --- matchmaking / salons publics -------------------------------------------
+def test_find_public_open_none_without_public_rooms():
+    mgr = RoomManager()
+    mgr.create()                               # salon privé -> ignoré
+    assert mgr.find_public_open() is None
+
+
+def test_quick_join_creates_public_room_then_reuses_it():
+    mgr = RoomManager()
+    r1, p1 = mgr.quick_join("a")
+    assert r1.public is True and p1.is_host is True     # 1er : crée + hôte
+    r2, p2 = mgr.quick_join("b")
+    assert r2 is r1 and p2.is_host is False             # 2e : rejoint le même
+
+
+def test_quick_join_fills_fullest_public_room_first():
+    mgr = RoomManager()
+    small = mgr.create(public=True); small.add_player("s1")
+    big = mgr.create(public=True); big.add_player("b1"); big.add_player("b2")
+    room, _ = mgr.quick_join("x")
+    assert room is big                                   # regroupe : remplit le plus rempli
+
+
+def test_quick_join_skips_full_and_started_rooms():
+    mgr = RoomManager()
+    full = mgr.create(public=True)
+    for i in range(MAX_PLAYERS):
+        full.add_player(f"p{i}")
+    started = mgr.create(public=True)
+    started.add_player("h"); started.add_player("g")
+    started.start(seed_word="orage", forbidden_order=list("xyzjkq"))
+    room, _ = mgr.quick_join("new")
+    assert room is not full and room is not started      # crée un salon neuf
+    assert room.public is True and len(room.players) == 1

@@ -579,6 +579,13 @@ body.multi .dpts { display: none; }
 .mpjoin .mpfield { margin: 0; letter-spacing: .3em; font-family: var(--pixel); font-size: 14px; }
 .mpjoin button { white-space: nowrap; }
 .mperr { color: var(--bail); font-size: 13px; min-height: 18px; margin-top: 8px; }
+
+/* Partie rapide (matchmaking) : bouton mis en avant en cyan + séparateur. */
+#mpQuick { background: linear-gradient(180deg, var(--cyan), #16b6cc);
+  box-shadow: 0 5px 0 #0d6f7e, 0 0 22px rgba(34,230,255,.5); }
+#mpQuick:active { box-shadow: 0 1px 0 #0d6f7e, 0 0 16px rgba(34,230,255,.5); }
+.mpor { color: var(--muted); font-size: 11px; letter-spacing: .04em;
+  text-transform: uppercase; margin: 6px 0 2px; opacity: .7; }
 .lobbycode { font-family: var(--pixel); color: var(--gold); letter-spacing: .2em; }
 .lobbylink { color: var(--cyan); word-break: break-all; }
 .lobbyplayers { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
