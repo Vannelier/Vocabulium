@@ -580,12 +580,26 @@ body.multi .dpts { display: none; }
 .mpjoin button { white-space: nowrap; }
 .mperr { color: var(--bail); font-size: 13px; min-height: 18px; margin-top: 8px; }
 
-/* Partie rapide (matchmaking) : bouton mis en avant en cyan + séparateur. */
+/* Partie rapide (matchmaking) : bouton mis en avant en cyan. */
 #mpQuick { background: linear-gradient(180deg, var(--cyan), #16b6cc);
   box-shadow: 0 5px 0 #0d6f7e, 0 0 22px rgba(34,230,255,.5); }
 #mpQuick:active { box-shadow: 0 1px 0 #0d6f7e, 0 0 16px rgba(34,230,255,.5); }
-.mpor { color: var(--muted); font-size: 11px; letter-spacing: .04em;
-  text-transform: uppercase; margin: 6px 0 2px; opacity: .7; }
+
+/* Libellés & aides : clarifient le rôle de chaque bloc (pseudo, rejoindre par code)
+   et cassent le lien visuel « Créer un salon » ↔ « CODE ». */
+.mplabel { display: block; width: 100%; max-width: 320px; margin: 10px auto 2px;
+  font-family: var(--pixel); font-size: 8px; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--muted); text-align: left; }
+.mplabel-code { margin-top: 18px; color: var(--cyan);
+  text-shadow: 0 0 10px rgba(34,230,255,.4); }
+.mpsub { max-width: 320px; margin: 6px auto 0; color: var(--muted);
+  font-size: 12px; opacity: .75; }
+
+/* Séparateur « ou entre amis » avec filets de part et d'autre. */
+.mpor { display: flex; align-items: center; gap: 10px; width: 100%; max-width: 320px;
+  margin: 16px auto 6px; color: var(--muted); font-size: 11px; letter-spacing: .06em;
+  text-transform: uppercase; opacity: .8; }
+.mpor::before, .mpor::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 .lobbycode { font-family: var(--pixel); color: var(--gold); letter-spacing: .2em; }
 .lobbylink { color: var(--cyan); word-break: break-all; }
 .lobbyplayers { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;

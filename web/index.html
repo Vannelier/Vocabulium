@@ -59,7 +59,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css?v=54">
+  <link rel="stylesheet" href="/style.css?v=55">
   <!-- AdSense : loader officiel (nécessaire à la validation Google + au CMP RGPD). -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7933464491322369"
           crossorigin="anonymous"></script>
@@ -161,21 +161,29 @@
   <!-- Multi : menu créer/rejoindre -->
   <div class="end" id="mpmenu">
     <h1>Multijoueur</h1>
-    <div class="recap">Joue avec des inconnus en <b>partie rapide</b>, ou crée un salon
-      privé à partager avec des amis.</div>
-    <input id="mpName" class="mpfield" maxlength="14" autocomplete="off" placeholder="ton pseudo">
+
+    <div class="mplabel">Ton pseudo</div>
+    <input id="mpName" class="mpfield" maxlength="14" autocomplete="off" placeholder="ex. Alex">
+
     <div class="endbtns">
       <button id="mpQuick">⚡ Partie rapide</button>
     </div>
-    <div class="mpor">— ou salon privé —</div>
+    <div class="mpsub">Joue avec des inconnus, en un clic</div>
+
+    <div class="mpor">ou entre amis</div>
+
     <div class="endbtns">
-      <button id="mpCreate">Créer un salon</button>
+      <button id="mpCreate">Créer un salon privé</button>
     </div>
+    <div class="mpsub">Tu obtiens un code à partager</div>
+
+    <div class="mplabel mplabel-code">Rejoindre avec un code</div>
     <div class="mpjoin">
       <input id="mpCode" class="mpfield" maxlength="4" autocomplete="off"
              placeholder="CODE" style="text-transform:uppercase">
       <button id="mpJoin">Rejoindre</button>
     </div>
+
     <div class="mperr" id="mpErr"></div>
     <div class="endbtns"><button id="mpBack">Retour</button></div>
   </div>
