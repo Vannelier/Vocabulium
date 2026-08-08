@@ -514,6 +514,17 @@ body::after {
   .detail.reject .dhead, .detail.weak .dhead { display: flex; }
 }
 
+/* Mode compact piloté par JS (visualViewport) : même effet que le média max-height,
+   mais déclenché aussi sur iOS où l'ouverture du clavier ne rétrécit PAS le layout
+   (le média CSS ne se déclenche alors jamais). Évite que « prochaine dans » et le
+   haut de l'écran soient rognés clavier ouvert. */
+body.kbd .trail,
+body.kbd .forbid-next,
+body.kbd .plbl,
+body.kbd .dhead { display: none; }
+body.kbd .detail.reject .dhead,
+body.kbd .detail.weak .dhead { display: flex; }
+
 /* ======================= MULTIJOUEUR ======================= */
 /* Bandeau joueurs (récupère la place du record + mot bonus, masqués en multi). */
 body.multi .hiscore { display: none; }
