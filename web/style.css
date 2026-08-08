@@ -374,7 +374,11 @@ body::after {
 /* --- Écrans départ / fin -------------------------------------------------- */
 .end { position: fixed; inset: 0; z-index: 20; display: none;
   align-items: center; justify-content: center; flex-direction: column; gap: 10px;
-  padding: 24px; text-align: center;
+  /* safe-area incluse : avec viewport-fit=cover, l'overlay couvre tout l'écran ;
+     sans ça les boutons se retrouvaient décalés sous l'encoche / les coins arrondis. */
+  padding: calc(24px + env(safe-area-inset-top)) calc(24px + env(safe-area-inset-right))
+           calc(24px + env(safe-area-inset-bottom)) calc(24px + env(safe-area-inset-left));
+  text-align: center;
   background:
     radial-gradient(120% 80% at 50% 0%, rgba(255,46,151,.18), transparent 55%),
     rgba(9,5,22,.94);
@@ -439,7 +443,11 @@ body::after {
 @media (max-width: 560px) {
   body { overflow: hidden; height: 100dvh; align-items: stretch; }
 
-  #app { height: 100dvh; margin: 0; padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+  #app { height: 100dvh; margin: 0;
+    /* safe-area sur les 4 côtés (viewport-fit=cover) : le haut ne passe plus sous
+       l'encoche / la barre d'état, et le contenu reste centré hors des bords arrondis. */
+    padding: calc(8px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right))
+             calc(8px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
     display: flex; flex-direction: column; gap: 0; }
 
   /* Blocs fixes : ne grandissent pas, marges resserrées */
@@ -500,4 +508,79 @@ body::after {
   .forbid-next { display: none; }
   .plbl { display: none; }
   .dhead { display: none; }
+  /* … mais on RÉVÈLE l'en-tête du détail quand le mot est refusé ou faible : c'est
+     là que s'affiche « mot inconnu » / « trop loin » / « déjà joué » — sinon ce
+     retour, essentiel, restait invisible clavier ouvert (écran court). */
+  .detail.reject .dhead, .detail.weak .dhead { display: flex; }
 }
+
+/* Mode compact piloté par JS (visualViewport) : même effet que le média max-height,
+   mais déclenché aussi sur iOS où l'ouverture du clavier ne rétrécit PAS le layout
+   (le média CSS ne se déclenche alors jamais). Évite que « prochaine dans » et le
+   haut de l'écran soient rognés clavier ouvert. */
+body.kbd .trail,
+body.kbd .forbid-next,
+body.kbd .plbl,
+body.kbd .dhead { display: none; }
+body.kbd .detail.reject .dhead,
+body.kbd .detail.weak .dhead { display: flex; }
+
+/* ======================= MULTIJOUEUR ======================= */
+/* Bandeau joueurs (récupère la place du record + mot bonus, masqués en multi). */
+body.multi .hiscore { display: none; }
+body.multi .cible { display: none !important; }
+
+/* Pas de score en multi : le score/rang est décoratif, nuit à la lisibilité et
+   mange de la place sur mobile. On retire tout le bloc HUD (score + rang + mult),
+   les points par mot dans la trace, et les points du panneau de détail. La barre
+   de proximité et les jauges rareté/vitesse restent (retour d'info, comme en solo). */
+body.multi .hud { display: none; }
+body.multi .trail .w .p { display: none; }
+body.multi .dpts { display: none; }
+
+.players { display: flex; gap: 5px; margin: 4px 0 10px; }
+.players .pl { flex: 1; display: flex; flex-direction: column; align-items: center;
+  gap: 3px; padding: 5px 2px; border-radius: 11px; border: 1.5px solid transparent; }
+.players .pl.me { border-color: rgba(34,230,255,.55); }
+.players .pl.active { border-color: var(--pink); background: rgba(255,46,151,.12);
+  box-shadow: 0 0 16px rgba(255,46,151,.55); animation: plpulse 1.1s ease-in-out infinite; }
+@keyframes plpulse { 0%,100%{box-shadow:0 0 10px rgba(255,46,151,.4)}
+  50%{box-shadow:0 0 20px rgba(255,46,151,.75)} }
+.players .pl.dead { opacity: .3; }
+.players .av { width: 30px; height: 30px; border-radius: 50%; display: flex;
+  align-items: center; justify-content: center; font-weight: 700; font-size: 14px;
+  color: #0d0722; }
+.players .pl.active .av { box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px var(--pink); }
+.players .nm { font-size: 9px; color: var(--muted); max-width: 52px; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; }
+.players .pl.me .nm { color: var(--cyan); font-weight: 700; }
+.players .pl.active .nm { color: var(--ink); }
+.players .hearts { display: flex; gap: 2px; }
+.players .hp { font-size: 11px; line-height: 1; }
+.players .hp.full { color: var(--pink); text-shadow: 0 0 5px var(--pink); }
+.players .hp.empty { color: var(--line); }
+
+.turnlbl { text-align: center; font-family: var(--pixel); font-size: 10px;
+  letter-spacing: .06em; color: var(--pink); margin-bottom: 8px; }
+.turnlbl.wait { color: var(--muted); }
+
+/* Champs & écrans lobby (réutilisent la carte .end existante). */
+.mpfield { width: 100%; max-width: 320px; margin: 6px auto; display: block;
+  background: var(--bg2); border: 1.5px solid var(--line); border-radius: 12px;
+  color: var(--ink); font-family: var(--body); font-size: 16px; padding: 12px 14px;
+  text-align: center; }
+.mpfield:focus { outline: none; border-color: var(--pink); box-shadow: var(--glow); }
+.mpjoin { display: flex; gap: 8px; max-width: 320px; margin: 10px auto; }
+.mpjoin .mpfield { margin: 0; letter-spacing: .3em; font-family: var(--pixel); font-size: 14px; }
+.mpjoin button { white-space: nowrap; }
+.mperr { color: var(--bail); font-size: 13px; min-height: 18px; margin-top: 8px; }
+.lobbycode { font-family: var(--pixel); color: var(--gold); letter-spacing: .2em; }
+.lobbylink { color: var(--cyan); word-break: break-all; }
+.lobbyplayers { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+  margin: 14px 0; }
+.lobbyplayers .lp { display: flex; align-items: center; gap: 6px; padding: 6px 10px;
+  background: var(--bg2); border: 1px solid var(--line); border-radius: 20px; font-size: 13px; }
+.lobbyplayers .lp .dot { width: 12px; height: 12px; border-radius: 50%; }
+.lobbyplayers .lp .host { color: var(--gold); font-size: 11px; }
+.mpwinner { font-family: var(--pixel); font-size: 18px; color: var(--gold);
+  text-shadow: 0 0 16px var(--gold); margin: 10px 0; }

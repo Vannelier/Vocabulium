@@ -495,11 +495,11 @@ async function submitHop() {
     addFill(FILL_STEP * (FILL_FLOOR + res.rarete + FILL_SPEED * res.speed));
     S.gauge = 1;                             // recharge pleine
     S.hops += 1;
-  } else {                                   // weak : petit remplissage seulement
+  } else {                                   // weak : petit remplissage du rang seulement
     addFill(FILL_WEAK);
-    S.gauge = Math.max(S.gauge, cfg.weak_refill);
     S.weakHops += 1;
   }
+  S.gauge = 1;                               // tout mot accepté recharge le chrono à fond
   el.gauge.style.transform = `scaleX(${S.gauge})`;
 
   let captureBonus = 0;
@@ -576,10 +576,26 @@ function endRun() {
 (function mobileKeyboard() {
   const vv = window.visualViewport;
   if (!vv) return;
+  const app = document.getElementById("app");
+  const mq = window.matchMedia("(max-width: 560px)");
   const sync = () => {
     const h = vv.height + "px";
     document.body.style.height = h;
     document.body.style.minHeight = h;     // écrase le 100dvh, sinon la page reste trop haute
+    if (mq.matches) {
+      // #app suit la zone RÉELLEMENT visible. Sur iOS le clavier ne redimensionne
+      // pas le layout (100dvh reste plein) : sans ça #app dépasse et son HAUT se
+      // fait rogner au scroll vers la saisie. En le calant sur visualViewport, la
+      // colonne flex se comprime et tout tient (haut non coupé, saisie en bas).
+      app.style.height = h;
+      // Mode compact piloté par la hauteur visible : le média CSS max-height ne se
+      // déclenche pas sur iOS clavier ouvert, donc on masque ici trail / « prochaine
+      // dans » / etc. dès que la place manque (clavier ouvert).
+      document.body.classList.toggle("kbd", vv.height < 620);
+    } else {
+      app.style.height = "";               // desktop / paysage large : on ne force rien
+      document.body.classList.remove("kbd");
+    }
   };
   const reveal = () => {
     if (document.activeElement === el.guess)
@@ -588,6 +604,7 @@ function endRun() {
   vv.addEventListener("resize", () => { sync(); setTimeout(reveal, 60); });
   vv.addEventListener("scroll", sync);
   el.guess.addEventListener("focus", () => setTimeout(reveal, 250));
+  mq.addEventListener("change", sync);
   sync();
 })();
 
@@ -595,12 +612,17 @@ function endRun() {
 el.guess.addEventListener("keydown", (e) => {
   if (e.key === "Enter") { e.preventDefault(); submitHop(); }
 });
+// Lettres interdites RÉELLEMENT affichées (tuiles du bandeau). Source unique de
+// vérité pour le feedback rouge de la saisie : en solo le bandeau vient de
+// activeForbidden(), en multi il vient du serveur — les deux sont couverts.
+function domForbidden() {
+  return [...el.forbidLetters.querySelectorAll(".fl")].map((n) => n.dataset.l);
+}
 el.guess.addEventListener("input", () => {
-  const bad = Letters.offendingLetters(el.guess.value.toLowerCase(), activeForbidden());
+  const bad = Letters.offendingLetters(el.guess.value.toLowerCase(), domForbidden());
   el.guess.classList.toggle("hasforbidden", bad.length > 0);
 });
 el.play.addEventListener("click", () => startWith("random"));
-document.getElementById("playDaily").addEventListener("click", () => startWith("daily"));
 async function startWith(mode) {
   S.mode = mode;
   await prepareRun();     // re-fetch le seed + re-tire les lettres selon le mode choisi

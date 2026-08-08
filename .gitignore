@@ -11,5 +11,8 @@ data/*
 # Config de lancement locale (chemins absolus machine-spécifiques)
 .claude/
 
+# Companion visuelle du brainstorming (mockups locaux)
+.superpowers/
+
 # Ancien clone GitHub imbriqué par erreur (déjà sur github.com/Vannelier/motfil)
 /motfil/
